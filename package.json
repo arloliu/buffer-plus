@@ -1,0 +1,42 @@
+{
+  "name": "buffer-plus",
+  "version": "1.0.0",
+  "description": "Enhanced buffer with offset calculation, schematic and customize type support.",
+  "main": "lib/BufferPlus.js",
+  "keywords": [
+    "buffer",
+    "schema",
+    "pack",
+    "binary",
+    "c-struct"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arloliu/buffer-plus"
+  },
+  "author": "Arlo Liu <arlo.liu@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "type": "git",
+    "url": "https://github.com/arloliu/buffer-plus/issues"
+  },
+  "homepage": "https://github.com/arloliu/buffer-plus",
+  "scripts": {
+    "test": "mocha"
+  },
+  "devDependencies": {
+    "babel-core": "^6.25.0",
+    "babel-eslint": "^7.2.3",
+    "babel-loader": "^7.1.1",
+    "babel-preset-env": "^1.6.0",
+    "benchmark": "^2.1.4",
+    "chai": "^4.1.0",
+    "eslint": "^4.3.0",
+    "mocha": "^3.4.2",
+    "schemapack": "^1.4.2",
+    "webpack": "^3.3.0"
+  },
+  "dependencies": {
+    "int64-buffer": "^0.1.9"
+  }
+}
