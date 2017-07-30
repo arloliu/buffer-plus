@@ -3,7 +3,12 @@
 /* eslint-disable no-new-func */
 
 const BufferPlus = require('./BufferPlus.js');
+const Int64BE = require('int64-buffer').Int64BE;
+const Int64LE = require('int64-buffer').Int64LE;
+const UInt64BE = require('int64-buffer').Uint64BE;
+const UInt64LE = require('int64-buffer').Uint64LE;
 const VarInt = require('./VarInt.js');
+
 // eslint-disable-next-line no-unused-vars
 const debug = require('util').debuglog('bp');
 
@@ -26,15 +31,15 @@ class BufferSchema
         this._byteLengthCtx = [];
         this._byteLengthInnerFuncs = {};
 
-        this._encodeFunc = function(buffer, json, schema) {
+        this._encodeFunc = function(buffer, json, helper) {
             throw new Error('Not implemented.');
         };
 
-        this._decodeFunc = function(buffer, schema) {
+        this._decodeFunc = function(buffer, helper) {
             throw new Error('Not implemented.');
         };
 
-        this._byteLengthFunc = function(json, schema) {
+        this._byteLengthFunc = function(json, helper) {
             throw new Error('Not implemented.');
         };
 
@@ -62,7 +67,6 @@ class BufferSchema
         this._encoding = encoding;
     }
 
-
     addField(key, dataType)
     {
         let funcStr;
@@ -75,14 +79,14 @@ class BufferSchema
             this._encodeInnerFuncs[schema.name] = schema.getEncodeNameFuncStr(`_write${funcName}`);
             this._byteLengthInnerFuncs[schema.name] = schema.getByteLengthNameFuncStr(`_byteLength${funcName}`);
             funcStr = {
-                read: `data.${key} = _read${funcName}(buffer, schema);`,
-                write: `_write${funcName}(buffer, json.${key}, schema);`,
-                size: `byteCount += _byteLength${funcName}(json.${key}, schema);`
+                read: `data.${key} = _read${funcName}(buffer, helper);`,
+                write: `_write${funcName}(buffer, json.${key}, helper);`,
+                size: `byteCount += _byteLength${funcName}(json.${key}, helper);`
             };
         }
         else
         {
-            funcStr = getDataTypeFunctionString(dataType, key, true);
+            funcStr = getDataTypeFunctionString(dataType, key);
         }
 
         this._encodeCtx.push(funcStr.write);
@@ -103,7 +107,7 @@ class BufferSchema
         const arrayIter2 = `${key}_iter2`;
         const itemStr2 = `${key}[${arrayIter2}]`;
 
-        let funcStr, funcStr2;
+        let funcStr, sizeFuncStr;
 
         if (dataType instanceof BufferSchema)
         {
@@ -114,26 +118,21 @@ class BufferSchema
             this._byteLengthInnerFuncs[schema.name] = schema.getByteLengthNameFuncStr(`_byteLength${funcName}`);
 
             funcStr = {
-                read: `data.${itemStr} = _read${funcName}(buffer, schema);`,
-                write: `_write${funcName}(buffer, json.${itemStr}, schema)`,
-                size: `byteCount += _byteLength${funcName}(json.${itemStr}, schema);`
+                read: `data.${itemStr} = _read${funcName}(buffer, helper);`,
+                write: `_write${funcName}(buffer, json.${itemStr}, helper)`,
             };
-            funcStr2 = {
-                read: `data.${itemStr2} = _read${funcName}(buffer, schema);`,
-                write: `_write${funcName}(buffer, json.${itemStr2}, schema)`,
-                size: `byteCount += _byteLength${funcName}(json.${itemStr2}, schema);`
-            };
+            sizeFuncStr = `byteCount += _byteLength${funcName}(json.${itemStr2}, helper);`;
         }
         else
         {
-            funcStr = getDataTypeFunctionString(dataType, itemStr, true);
-            funcStr2 = getDataTypeFunctionString(dataType, itemStr2, true);
+            funcStr = getDataTypeFunctionString(dataType, itemStr);
+            sizeFuncStr = getBuiltinSizeString(dataType, 'json.' + itemStr2);
         }
 
 
         this._decodeCtx.push(`
-            let ${arrayLenVal} = buffer.readVarUInt();
-            data.${key} = new Array();
+            let ${arrayLenVal} = helper.readVarUInt(buffer);
+            data.${key} = [];
             for (let ${arrayIter} = 0; ${arrayIter} < ${arrayLenVal}; ${arrayIter}++) {
                 ${funcStr.read}
             }
@@ -151,7 +150,7 @@ class BufferSchema
             let ${arrayLenVal2} = json.${key}.length;
             byteCount += helper.byteLengthVarUInt(${arrayLenVal2});
             for (let ${arrayIter2} = 0; ${arrayIter2} < ${arrayLenVal2}; ${arrayIter2}++) {
-                ${funcStr2.size}
+                ${sizeFuncStr}
             }
         `);
 
@@ -173,8 +172,8 @@ class BufferSchema
         const encodeFuncStr = this._buildEncodeFuncStr();
         const byteLengthFuncStr = this._buildByteLengthFuncStr();
 
-        this._decodeFunc = new Function('buffer', 'helper', decodeFuncStr);
-        this._encodeFunc = new Function('wbuffer', 'json', 'helper', encodeFuncStr);
+        this._decodeFunc = new Function('rBuffer', 'helper', decodeFuncStr);
+        this._encodeFunc = new Function('wBuffer', 'json', 'helper', encodeFuncStr);
         this._byteLengthFunc = new Function('json', 'helper', byteLengthFuncStr);
         debug('_decodeFunc:\n', this._decodeFunc.toString());
         debug('_encodeFunc:\n', this._encodeFunc.toString());
@@ -183,19 +182,19 @@ class BufferSchema
 
     getDecodeNameFuncStr(funcName)
     {
-        const decodeFuncStr = this._buildDecodeFuncStr();
+        const decodeFuncStr = this._buildDecodeFuncStr(true);
         return `const ${funcName} = function (buffer, helper) {${decodeFuncStr}};`;
     }
 
     getEncodeNameFuncStr(funcName)
     {
-        const encodeFuncStr = this._buildEncodeFuncStr();
-        return `const ${funcName} = function (wbuffer, json, helper) {${encodeFuncStr}};`;
+        const encodeFuncStr = this._buildEncodeFuncStr(true);
+        return `const ${funcName} = function (buffer, json, helper) {${encodeFuncStr}};`;
     }
 
     getByteLengthNameFuncStr(funcName)
     {
-        const byteLengthFuncStr = this._buildByteLengthFuncStr();
+        const byteLengthFuncStr = this._buildByteLengthFuncStr(true);
         return `const ${funcName} = function (json, helper) {${byteLengthFuncStr}};`;
     }
 
@@ -207,38 +206,38 @@ class BufferSchema
         return BufferPlus._getDataTypeByteLength(value, dataType, encoding);
     }
 
-    _buildDecodeFuncStr()
+    _buildDecodeFuncStr(inner)
     {
+        const rootPrefix = inner ? [] : [
+            'const buffer = rBuffer._buf;',
+            'helper.offset = 0;',
+        ];
         const decodePrefixs = [
-            //'if (!buffer instanceof BufferPlus) throw new TypeError("Invalid buffer for decoder");',
             `const strEnc = '${this._encoding}';`,
-            'const data = {};'
+            'const data = {};',
         ];
         const decodeSuffixs = [
+            inner ? '' : 'rBuffer._forceMoveTo(helper.offset);',
             'return data;'
         ];
 
         for (let name in this._decodeInnerFuncs)
             decodePrefixs.unshift(this._decodeInnerFuncs[name]);
 
-        return decodePrefixs.concat(
+        return rootPrefix.concat(
+            decodePrefixs,
             this._decodeCtx,
             decodeSuffixs
         ).join('\n');
     }
 
-    _buildEncodeFuncStr()
+    _buildEncodeFuncStr(inner)
     {
         const encodePrefixs = [
-            //'if (!json instanceof Object) throw new TypeError("Invalid json data for encoder");',
-            `const strEnc = '${this._encoding}';`,
-            'buffer = wbuffer._buf;',
-            'helper.offset = 0;',
-            'let byteCount = 0;',
-            // this.getByteLengthNameFuncStr(`_byteLength`),
-            // 'let byteCount = _byteLength(json, helper);',
+            inner ? [] : `var strEnc = '${this._encoding}';`,
         ];
         const encodeSuffixs = [
+            inner ? '' : 'wBuffer._forceOffset(helper.offset);',
         ];
 
         for (let name in this._encodeInnerFuncs)
@@ -248,15 +247,19 @@ class BufferSchema
             encodePrefixs.unshift(this._byteLengthInnerFuncs[name]);
 
         return encodePrefixs.concat(
-            this._byteLengthCtx,
-            `wbuffer._ensureWriteSize(byteCount);`,
+            inner ? [] : 'helper.offset = 0;',
+            inner ? [] : 'let byteCount = 0;',
+            inner ? [] : this._byteLengthCtx,
+            inner ? [] : `wBuffer._ensureWriteSize(byteCount);`,
+            inner ? [] : `const buffer = wBuffer._buf;`,
             this._encodeCtx,
             encodeSuffixs
         ).join('\n');
     }
 
-    _buildByteLengthFuncStr()
+    _buildByteLengthFuncStr(inner)
     {
+
         const prefixs = [
             // 'if (!json instanceof Object) throw new TypeError("Invalid json data for encoder");',
             `const strEnc = '${this._encoding}';`,
@@ -271,6 +274,84 @@ class BufferSchema
 
         return prefixs.concat(this._byteLengthCtx, suffixs).join('\n');
     }
+} // class BufferSchema
+
+
+
+// helper read/write Int64
+function readInt64BE(buffer)
+{
+    const value = new Int64BE(buffer.slice(helper.offset, helper.offset + 8));
+    helper.offset += 8;
+    return value.toNumber();
+}
+
+function readInt64LE(buffer)
+{
+    const value = new Int64LE(buffer.slice(helper.offset, helper.offset + 8));
+    helper.offset += 8;
+    return value.toNumber();
+}
+
+function readUInt64BE(buffer)
+{
+    const value = new UInt64BE(buffer.slice(helper.offset, helper.offset + 8));
+    helper.offset += 8;
+    return value.toNumber();
+}
+
+function readUInt64LE(buffer)
+{
+    const value = new UInt64LE(buffer.slice(helper.offset, helper.offset + 8));
+    helper.offset += 8;
+    return value.toNumber();
+}
+
+function writeInt64BE(buffer, value)
+{
+    const int64 = new Int64BE(value);
+    int64.toBuffer().copy(buffer, helper.offset, 0, 8);
+    helper.offset += 8;
+}
+
+function writeInt64LE(buffer, value)
+{
+    const int64 = new Int64LE(value);
+    int64.toBuffer().copy(buffer, helper.offset, 0, 8);
+    helper.offset += 8;
+}
+
+function writeUInt64BE(buffer, value)
+{
+    const int64 = new UInt64BE(value);
+    int64.toBuffer().copy(buffer, helper.offset, 0, 8);
+    helper.offset += 8;
+}
+
+function writeUInt64LE(buffer, value)
+{
+    const int64 = new UInt64LE(value);
+    int64.toBuffer().copy(buffer, helper.offset, 0, 8);
+    helper.offset += 8;
+}
+
+// helper read/write var uint
+function readVarUInt(buffer)
+{
+    let val = 0;
+    let shift = 0;
+    let byte;
+    do
+    {
+        byte = buffer[helper.offset++];
+        val += (shift < 28)
+            ? (byte & 0x7F) << shift
+            : (byte & 0x7F) * Math.pow(2, shift);
+        shift += 7;
+    }
+    while (byte & 0x80);
+
+    return val;
 }
 
 function writeVarUInt(buffer, value)
@@ -289,6 +370,28 @@ function writeVarUInt(buffer, value)
     buffer[helper.offset++] = value | 0;
 }
 
+// helper read/write var int
+function readVarInt(buffer)
+{
+    const val = readVarUInt(buffer);
+    return (val & 1) ? (val + 1) / -2 : val / 2;
+}
+
+function writeVarInt(buffer, value)
+{
+    const val = value >= 0 ? value * 2 : (value * -2) - 1;
+    writeVarUInt(buffer, val);
+}
+
+// helper read/write string
+function readString(buffer, strEnc)
+{
+    const len = readVarUInt(buffer);
+    const str = buffer.toString(strEnc, helper.offset, helper.offset + len);
+    helper.offset += len;
+    return str;
+}
+
 function writeString(buffer, value, encoding)
 {
     const len = Buffer.byteLength(value);
@@ -297,11 +400,47 @@ function writeString(buffer, value, encoding)
     helper.offset += len;
 }
 
+// helper read/write Buffer
+function readBuffer(buffer)
+{
+    const len = readVarUInt(buffer);
+    const buf = buffer.slice(helper.offset, helper.offset + len)
+    helper.offset += len;
+    return buf;
+}
+
+function writeBuffer(buffer, value)
+{
+    const len = value.len;
+    writeVarUInt(buffer, len);
+    value.copy(buffer, helper.offset)
+    helper.offset += len;
+}
+
 const helper = {
     offset: 0,
     getDataTypeByteLength: BufferPlus._getDataTypeByteLength,
+
+    readInt64BE: readInt64BE,
+    readInt64LE: readInt64LE,
+    readUInt64BE: readUInt64BE,
+    readUInt64LE: readUInt64LE,
+    writeInt64BE: writeInt64BE,
+    writeInt64LE: writeInt64LE,
+    writeUInt64BE: writeUInt64BE,
+    writeUInt64LE: writeUInt64LE,
+
+    readVarInt: readVarInt,
+    writeVarInt: writeVarInt,
+
+    readVarUInt: readVarUInt,
     writeVarUInt: writeVarUInt,
+
+    readString: readString,
     writeString: writeString,
+
+    readBuffer: readBuffer,
+    writeBuffer: writeBuffer,
 
     byteLengthString: function(value, encoding)
     {
@@ -329,39 +468,40 @@ const helper = {
 
 
 const READ_BUILTIN_TYPES = {
-    'boolean': 'buffer.readUInt8Direct();',
-    'int8': 'buffer.readInt8Direct();',
-    'int16be': 'buffer.readInt16BEDirect();',
-    'int16le': 'buffer.readInt16LEDirect();',
-    'int32be': 'buffer.readInt32BEDirect();',
-    'int32le': 'buffer.readInt32LEDirect();',
-    'int64be': 'buffer.readInt64BEDirect();',
-    'int64le': 'buffer.readInt64LEDirect();',
+    'boolean': 'buffer.readInt8(helper.offset, true); helper.offset += 1;',
+    'int8': 'buffer.readInt8(helper.offset, true); helper.offset += 1;',
+    'int16be': 'buffer.readInt16BE(helper.offset, true); helper.offset += 2;',
+    'int16le': 'buffer.readInt16LE(helper.offset, true); helper.offset += 2;',
+    'int32be': 'buffer.readInt32BE(helper.offset, true); helper.offset += 4;',
+    'int32le': 'buffer.readInt32LE(helper.offset, true); helper.offset += 4;',
+    'int64be': 'helper.readInt64BE(buffer);',
+    'int64le': 'helper.readInt64LE(buffer);',
 
-    'uint8': 'buffer.readUInt8Direct();',
-    'uint16be': 'buffer.readUInt16BEDirect();',
-    'uint16le': 'buffer.readUInt16LEDirect();',
-    'uint32be': 'buffer.readUInt32BEDirect();',
-    'uint32le': 'buffer.reaBufferSchemadUInt32LEDirect();',
-    'uint64be': 'buffer.readUInt64BEDirect();',
-    'uint64le': 'buffer.readUInt64LEDirect();',
+    'uint8': 'buffer.readUInt8(helper.offset, true); helper.offset += 1;',
+    'uint16be': 'buffer.readUInt16BE(helper.offset, true); helper.offset += 2;',
+    'uint16le': 'buffer.readUInt16LE(helper.offset, true); helper.offset += 2;',
+    'uint32be': 'buffer.readUInt32BE(helper.offset, true); helper.offset += 4;',
+    'uint32le': 'buffer.readUInt32LE(helper.offset, true); helper.offset += 4;',
+    'uint64be': 'helper.readUInt64BE(buffer);',
+    'uint64le': 'helper.readUInt64LE(buffer);',
 
-    'floatbe': 'buffer.readFloatBEDirect();',
-    'floatle': 'buffer.readFloatLEDirect();',
+    'floatbe': 'buffer.readFloatBE(helper.offset, true); helper.offset += 4;',
+    'floatle': 'buffer.readFloatLE(helper.offset, true); helper.offset += 4;',
 
-    'doublebe': 'buffer.readDoubleBEDirect();',
-    'doublele': 'buffer.readDoubleLEDirect();',
+    'doublebe': 'buffer.readDoubleBE(helper.offset, true); helper.offset += 8;',
+    'doublele': 'buffer.readDoubleLE(helper.offset, true); helper.offset += 8;',
 
-    'varint': 'buffer.readVarIntDirect();',
-    'varuint': 'buffer.readVarUIntDirect();',
+    'varint': 'helper.readVarInt(buffer);',
+    'varuint': 'helper.readVarUInt(buffer);',
 
-    'string': 'buffer.readPackedStringDirect(strEnc);',
-    'buffer': 'buffer.readPackedBufferDirect();',
+
+    'string': 'helper.readString(buffer, strEnc);',
+    'buffer': 'helper.readBuffer(buffer);',
 };
 
 function _genWriteStr(funcName, valueStr)
 {
-    return `buffer.write${funcName}Direct(${valueStr});`;
+    return `helper.offset =buffer.write${funcName}(${valueStr}, helper.offset, true);`;
 }
 
 function getBuiltinWriteString(dataType, valueStr)
@@ -374,33 +514,27 @@ function getBuiltinWriteString(dataType, valueStr)
         case 'int16le': return _genWriteStr('Int16LE', valueStr);
         case 'int32be': return _genWriteStr('Int32BE', valueStr);
         case 'int32le': return _genWriteStr('Int32LE', valueStr);
-        case 'int64be': return _genWriteStr('Int64BE', valueStr);
-        case 'int64le': return _genWriteStr('Int64LE', valueStr);
+        case 'int64be': return `helper.writeInt64BE();`;
+        case 'int64le': return `helper.writeInt64LE();`;
 
         case 'uint8': return _genWriteStr('UInt8', valueStr);
         case 'uint16be': return _genWriteStr('UInt16BE', valueStr);
         case 'uint16le': return _genWriteStr('UInt16LE', valueStr);
-        // case 'uint32be': return _genWriteStr('UInt32BE', valueStr);
-        // case 'uint32le': return _genWriteStr('UInt32LE', valueStr);
-        case 'uint32be': return `helper.offset = buffer.writeUInt32BE(${valueStr}, helper.offset);`;
-        case 'uint32le': return `helper.offset = buffer.writeUInt32LE(${valueStr}, helper.offset);`;
-
-        case 'uint64be': return _genWriteStr('UInt64BE', valueStr);
-        case 'uint64le': return _genWriteStr('UInt64LE', valueStr);
+        case 'uint32be': return _genWriteStr('UInt32BE', valueStr);
+        case 'uint32le': return _genWriteStr('UInt32LE', valueStr);
+        case 'uint64be': return `helper.writeUInt64BE();`;
+        case 'uint64le': return `helper.writeUInt64LE();`;
 
         case 'floatbe': return _genWriteStr('FloatBE', valueStr);
         case 'floatle': return _genWriteStr('FloatLE', valueStr);
         case 'doublebe': return _genWriteStr('DoubleBE', valueStr);
         case 'doublele': return _genWriteStr('DoubleLE', valueStr);
 
-        // case 'varint': return _genWriteStr('VarInt', valueStr);
-        // case 'varuint': return _genWriteStr('VarUInt', valueStr);
 
         case 'varuint': return `helper.writeVarUInt(buffer, ${valueStr});`;
 
         case 'string': return `helper.writeString(buffer, ${valueStr}, strEnc);`;
-        //case 'string': return `buffer.writePackedStringDirect(${valueStr}, strEnc);`;
-        case 'buffer': return `buffer.writePackedBufferDirect(${valueStr});`;
+        case 'buffer': return `helper.writeBuffer(buffer, ${valueStr});`;
     }
     return undefined;
 }
@@ -410,7 +544,7 @@ function getBuiltinReadString(dataType, valueStr)
     return valueStr + ' = ' + READ_BUILTIN_TYPES[dataType];
 }
 
-function getByteLengthString(dataType, valueStr)
+function getBuiltinSizeString(dataType, valueStr)
 {
     const funcMap = BufferPlus._getTypeFuncMap(dataType);
     if (!funcMap || !funcMap.size)
@@ -432,12 +566,14 @@ function getByteLengthString(dataType, valueStr)
     return `byteCount += helper.getDataTypeByteLength(${valueStr}, '${dataType}', strEnc);`;
 }
 
-function getDataTypeFunctionString(type, key, prefix)
+function getDataTypeFunctionString(type, key)
 {
     const dataType = type.trim();
     const typeLowerCase = dataType.toLowerCase();
-    const readObjStr = (prefix ? 'data.' : '') + key.trim();
-    const writeObjStr = (prefix ? 'json.' : '') + key.trim();
+    const readObjStr = 'data.' + key.trim();
+    const writeObjStr = 'json.' + key.trim();
+    // const readObjStr = `data['${key.trim()}']`;
+    // const writeObjStr = `json['${key.trim()}']`;
 
     // case insensitive
     if (READ_BUILTIN_TYPES.hasOwnProperty(typeLowerCase))
@@ -445,16 +581,16 @@ function getDataTypeFunctionString(type, key, prefix)
         return {
             read: getBuiltinReadString(typeLowerCase, readObjStr),
             write: getBuiltinWriteString(typeLowerCase, writeObjStr),
-            size: getByteLengthString(dataType, writeObjStr),
+            size: getBuiltinSizeString(dataType, writeObjStr),
         };
     }
     // case sensitive
     else if (BufferPlus.hasCustomType(dataType))
     {
         return {
-            read: readObjStr + ' = buffer.read' + dataType + '();',
-            write: 'buffer.write' + dataType + '(' + writeObjStr + ')',
-            size: getByteLengthString(dataType, writeObjStr),
+            read: `${readObjStr} = buffer.read${dataType}();`,
+            write: `buffer.write${dataType}(${writeObjStr});`,
+            size: getBuiltinSizeString(dataType, writeObjStr),
         };
     }
     else

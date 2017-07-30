@@ -118,7 +118,7 @@ class BufferPlus
         if (!Number.isSafeInteger(position))
             throw new TypeError('position must be a valid integer number');
         if (position < 0 || position >= this._len)
-            throw new RangeError('position must be between 0 to length - 1');
+            throw new RangeError('position must be between 0 to length - 1, len:'+ this._len + ' position:' + position);
         this._pos = position;
     }
 
@@ -727,6 +727,17 @@ class BufferPlus
 
 
     /*** Private methods ***/
+    _forceOffset(offset)
+    {
+        this._len = this._pos + offset;
+        this._pos = this._pos + offset;
+    }
+
+    _forceMoveTo(position)
+    {
+        this._pos = position;
+    }
+
     _calculateOffset(insertOffset)
     {
         if (typeof insertOffset === 'number')
