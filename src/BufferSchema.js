@@ -228,8 +228,6 @@ class BufferSchema
     _compactFuncStr(array)
     {
         const trimArray = array.map((item) => {
-            console.log('item type:' + typeof item);
-            console.log(item);
             if (typeof item !== 'string')
                 return '';
 
