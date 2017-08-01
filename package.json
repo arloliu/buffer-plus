@@ -23,7 +23,8 @@
   "homepage": "https://github.com/arloliu/buffer-plus",
   "scripts": {
     "test": "mocha",
-    "build": "babel --no-comments -d lib src"
+    "build": "babel --no-comments -d lib src",
+    "watch": "babel --watch --no-comments -d lib src"
   },
   "devDependencies": {
     "babel-cli": "^6.24.1",
