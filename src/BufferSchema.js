@@ -12,8 +12,6 @@ const VarInt = require('./VarInt.js');
 // eslint-disable-next-line no-unused-vars
 const debug = require('util').debuglog('bp');
 
-const MSB_BYTES = ~(0x7F);
-
 
 class BufferSchema
 {
@@ -30,6 +28,10 @@ class BufferSchema
 
         this._byteLengthCtx = [];
         this._byteLengthInnerFuncs = {};
+
+        this._refCtx = [];
+
+        this._refIndex = 1;
 
         this._encodeFunc = function(buffer, json, helper) {
             throw new Error('Not implemented.');
@@ -69,7 +71,10 @@ class BufferSchema
 
     addField(key, dataType)
     {
+        key = key.trim();
         let funcStr;
+        const readObjStr = `data['${key}']`;
+        const writeObjStr = `json['${key}']`;
         if (dataType instanceof BufferSchema)
         {
             const schema = dataType;
@@ -80,13 +85,13 @@ class BufferSchema
             this._byteLengthInnerFuncs[schema.name] = schema.getByteLengthNameFuncStr(`_byteLength${funcName}`);
             funcStr = {
                 read: `data.${key} = _read${funcName}(buffer, helper);`,
-                write: `_write${funcName}(buffer, json.${key}, helper);`,
-                size: `byteCount += _byteLength${funcName}(json.${key}, helper);`
+                write: `_write${funcName}(buffer, ${writeObjStr}, helper);`,
+                size: `byteCount += _byteLength${funcName}(${writeObjStr}, helper);`
             };
         }
         else
         {
-            funcStr = getDataTypeFunctionString(dataType, key);
+            funcStr = getDataTypeFunctionString(dataType, readObjStr, writeObjStr);
         }
 
         this._encodeCtx.push(funcStr.write);
@@ -96,50 +101,57 @@ class BufferSchema
         return this;
     }
 
+
     addArrayField(key, dataType)
     {
         key = key.trim();
-        const arrayLenVal = `${key}_arr_len`;
-        const arrayIter = `${key}_iter`;
-        const itemStr = `${key}[${arrayIter}]`;
+        const readItem = `data['${key}']`;
+        const writeItem = this._addRefVal(`json['${key}']`);
 
-        const arrayLenVal2 = `${key}_arr_len2`;
-        const arrayIter2 = `${key}_iter2`;
-        const itemStr2 = `${key}[${arrayIter2}]`;
+        const arrayLenVal = getArrayValStr();
+        const arrayIter = getIterStr();
+        const readObjStr = `${readItem}[${arrayIter}]`;
+        const writeObjStr = `${writeItem}[${arrayIter}]`;
+
+        const arrayLenVal2 = getArrayValStr();
+        const arrayIter2 = getIterStr();
+        //const readObjStr2 = `${readItem}[${arrayIter2}]`;
+        const writeObjStr2 = `${writeItem}[${arrayIter2}]`;
+
 
         let funcStr, sizeFuncStr;
 
         if (dataType instanceof BufferSchema)
         {
             const schema = dataType;
-            const funcName = `Schema${schema.name}`;
-            this._decodeInnerFuncs[schema.name] = schema.getDecodeNameFuncStr(`_read${funcName}`);
-            this._encodeInnerFuncs[schema.name] = schema.getEncodeNameFuncStr(`_write${funcName}`);
-            this._byteLengthInnerFuncs[schema.name] = schema.getByteLengthNameFuncStr(`_byteLength${funcName}`);
+            const schemaName = `Schema${schema.name}`;
+            this._decodeInnerFuncs[schema.name] = schema.getDecodeNameFuncStr(`_read${schemaName}`);
+            this._encodeInnerFuncs[schema.name] = schema.getEncodeNameFuncStr(`_write${schemaName}`);
+            this._byteLengthInnerFuncs[schema.name] = schema.getByteLengthNameFuncStr(`_byteLength${schemaName}`);
 
             funcStr = {
-                read: `data.${itemStr} = _read${funcName}(buffer, helper);`,
-                write: `_write${funcName}(buffer, json.${itemStr}, helper)`,
+                read: `${readObjStr} = _read${schemaName}(buffer, helper);`,
+                write: `_write${schemaName}(buffer, ${writeObjStr}, helper)`,
             };
-            sizeFuncStr = `byteCount += _byteLength${funcName}(json.${itemStr2}, helper);`;
+            sizeFuncStr = `byteCount += _byteLength${schemaName}(${writeObjStr2}, helper);`;
         }
         else
         {
-            funcStr = getDataTypeFunctionString(dataType, itemStr);
-            sizeFuncStr = getBuiltinSizeString(dataType, 'json.' + itemStr2);
+            funcStr = getDataTypeFunctionString(dataType, readObjStr, writeObjStr);
+            sizeFuncStr = getBuiltinSizeString(dataType, writeObjStr2);
         }
 
 
         this._decodeCtx.push(`
             let ${arrayLenVal} = helper.readVarUInt(buffer);
-            data.${key} = [];
+            ${readItem} = [];
             for (let ${arrayIter} = 0; ${arrayIter} < ${arrayLenVal}; ${arrayIter}++) {
                 ${funcStr.read}
             }
         `);
 
         this._encodeCtx.push(`
-            let ${arrayLenVal} = json.${key}.length;
+            let ${arrayLenVal} = ${writeItem}.length;
             helper.writeVarUInt(buffer, ${arrayLenVal});
             for (let ${arrayIter} = 0; ${arrayIter} < ${arrayLenVal}; ${arrayIter}++) {
                 ${funcStr.write}
@@ -147,7 +159,7 @@ class BufferSchema
         `);
 
         this._byteLengthCtx.push(`
-            let ${arrayLenVal2} = json.${key}.length;
+            let ${arrayLenVal2} = ${writeItem}.length;
             byteCount += helper.byteLengthVarUInt(${arrayLenVal2});
             for (let ${arrayIter2} = 0; ${arrayIter2} < ${arrayLenVal2}; ${arrayIter2}++) {
                 ${sizeFuncStr}
@@ -198,7 +210,13 @@ class BufferSchema
         return `const ${funcName} = function (json, helper) {${byteLengthFuncStr}};`;
     }
 
-
+    _addRefVal(assignVal)
+    {
+        const refVal = `ref${this._refIndex}`;
+        this._refIndex++;
+        this._refCtx.push(`const ${refVal} = ${assignVal};`);
+        return refVal;
+    }
 
     // proxy method
     _getDataTypeByteLength(value, dataType, encoding)
@@ -247,6 +265,7 @@ class BufferSchema
             encodePrefixs.unshift(this._byteLengthInnerFuncs[name]);
 
         return encodePrefixs.concat(
+            this._refCtx,
             inner ? [] : 'helper.offset = 0;',
             inner ? [] : 'let byteCount = 0;',
             inner ? [] : this._byteLengthCtx,
@@ -272,7 +291,11 @@ class BufferSchema
         for (let name in this._byteLengthInnerFuncs)
             prefixs.unshift(this._byteLengthInnerFuncs[name]);
 
-        return prefixs.concat(this._byteLengthCtx, suffixs).join('\n');
+        return prefixs.concat(
+            this._refCtx,
+            this._byteLengthCtx,
+            suffixs
+        ).join('\n');
     }
 } // class BufferSchema
 
@@ -404,7 +427,7 @@ function writeString(buffer, value, encoding)
 function readBuffer(buffer)
 {
     const len = readVarUInt(buffer);
-    const buf = buffer.slice(helper.offset, helper.offset + len)
+    const buf = buffer.slice(helper.offset, helper.offset + len);
     helper.offset += len;
     return buf;
 }
@@ -413,7 +436,7 @@ function writeBuffer(buffer, value)
 {
     const len = value.len;
     writeVarUInt(buffer, len);
-    value.copy(buffer, helper.offset)
+    value.copy(buffer, helper.offset);
     helper.offset += len;
 }
 
@@ -499,6 +522,24 @@ const READ_BUILTIN_TYPES = {
     'buffer': 'helper.readBuffer(buffer);',
 };
 
+
+var _iterIndex = 1;
+var _arrayValIndex = 1;
+
+function getIterStr()
+{
+    const iter = `j${_iterIndex}`;
+    _iterIndex++;
+    return iter;
+}
+
+function getArrayValStr()
+{
+    const val = `arrLen${_arrayValIndex}`;
+    _arrayValIndex++;
+    return val;
+}
+
 function _genWriteStr(funcName, valueStr)
 {
     return `helper.offset =buffer.write${funcName}(${valueStr}, helper.offset, true);`;
@@ -514,16 +555,16 @@ function getBuiltinWriteString(dataType, valueStr)
         case 'int16le': return _genWriteStr('Int16LE', valueStr);
         case 'int32be': return _genWriteStr('Int32BE', valueStr);
         case 'int32le': return _genWriteStr('Int32LE', valueStr);
-        case 'int64be': return `helper.writeInt64BE();`;
-        case 'int64le': return `helper.writeInt64LE();`;
+        case 'int64be': return `helper.writeInt64BE(buffer, ${valueStr});`;
+        case 'int64le': return `helper.writeInt64LE(buffer, ${valueStr});`;
 
         case 'uint8': return _genWriteStr('UInt8', valueStr);
         case 'uint16be': return _genWriteStr('UInt16BE', valueStr);
         case 'uint16le': return _genWriteStr('UInt16LE', valueStr);
         case 'uint32be': return _genWriteStr('UInt32BE', valueStr);
         case 'uint32le': return _genWriteStr('UInt32LE', valueStr);
-        case 'uint64be': return `helper.writeUInt64BE();`;
-        case 'uint64le': return `helper.writeUInt64LE();`;
+        case 'uint64be': return `helper.writeUInt64BE(buffer, ${valueStr});`;
+        case 'uint64le': return `helper.writeUInt64LE(buffer, ${valueStr});`;
 
         case 'floatbe': return _genWriteStr('FloatBE', valueStr);
         case 'floatle': return _genWriteStr('FloatLE', valueStr);
@@ -532,6 +573,7 @@ function getBuiltinWriteString(dataType, valueStr)
 
 
         case 'varuint': return `helper.writeVarUInt(buffer, ${valueStr});`;
+        case 'varint': return `helper.writeVarInt(buffer, ${valueStr});`;
 
         case 'string': return `helper.writeString(buffer, ${valueStr}, strEnc);`;
         case 'buffer': return `helper.writeBuffer(buffer, ${valueStr});`;
@@ -566,14 +608,12 @@ function getBuiltinSizeString(dataType, valueStr)
     return `byteCount += helper.getDataTypeByteLength(${valueStr}, '${dataType}', strEnc);`;
 }
 
-function getDataTypeFunctionString(type, key)
+function getDataTypeFunctionString(type, readObjStr, writeObjStr)
 {
     const dataType = type.trim();
     const typeLowerCase = dataType.toLowerCase();
-    const readObjStr = 'data.' + key.trim();
-    const writeObjStr = 'json.' + key.trim();
-    // const readObjStr = `data['${key.trim()}']`;
-    // const writeObjStr = `json['${key.trim()}']`;
+    readObjStr = readObjStr.trim();
+    writeObjStr = writeObjStr.trim();
 
     // case insensitive
     if (READ_BUILTIN_TYPES.hasOwnProperty(typeLowerCase))
