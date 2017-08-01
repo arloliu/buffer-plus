@@ -2,7 +2,7 @@
 const MSB_BYTES = ~(0x7F);
 
 // Encode
-exports.encodeUInt = function(value, output)
+function encodeUInt(value, output)
 {
     let val = value;
     let count = 0;
@@ -21,17 +21,18 @@ exports.encodeUInt = function(value, output)
     output[count++] = val | 0;
 
     return count;
-};
+}
+exports.encodeUInt = encodeUInt;
 
 exports.encodeInt = function(value, output)
 {
     const val = value >= 0 ? value * 2 : (value * -2) - 1;
-    return exports.encodeUInt(val, output);
+    return encodeUInt(val, output);
 };
 
 // Decode
 // return [value, byte length]
-exports.decodeUInt = function(buf, offset, endBoundary)
+function decodeUInt(buf, offset, endBoundary)
 {
     let val = 0;
     let shift = 0;
@@ -51,11 +52,12 @@ exports.decodeUInt = function(buf, offset, endBoundary)
     while (byte & 0x80);
 
     return [val, count - offset];
-};
+}
+exports.decodeUInt = decodeUInt;
 
 exports.decodeInt = function(buf, offset, endBoundary)
 {
-    const result = exports.decodeUInt(buf, offset, endBoundary);
+    const result = decodeUInt(buf, offset, endBoundary);
     const val = (result[0] & 1) ? (result[0] + 1) / -2 : result[0] / 2;
     return [val, result[1]];
 };
@@ -63,33 +65,33 @@ exports.decodeInt = function(buf, offset, endBoundary)
 
 
 
-const N1 = Math.pow(2, 7);
-const N2 = Math.pow(2, 14);
-const N3 = Math.pow(2, 21);
-const N4 = Math.pow(2, 28);
-const N5 = Math.pow(2, 35);
-const N6 = Math.pow(2, 42);
-const N7 = Math.pow(2, 49);
-const N8 = Math.pow(2, 56);
-const N9 = Math.pow(2, 63);
-
-exports.byteLengthUInt = function(value)
+// const N1 = Math.pow(2, 7);
+// const N2 = Math.pow(2, 14);
+// const N3 = Math.pow(2, 21);
+// const N4 = Math.pow(2, 28);
+// const N5 = Math.pow(2, 35);
+// const N6 = Math.pow(2, 42);
+// const N7 = Math.pow(2, 49);
+// const N8 = Math.pow(2, 56);
+// const N9 = Math.pow(2, 63);
+function byteLengthUInt(value)
 {
     return (
-        value < N1   ? 1
-        : value < N2 ? 2
-        : value < N3 ? 3
-        : value < N4 ? 4
-        : value < N5 ? 5
-        : value < N6 ? 6
-        : value < N7 ? 7
-        : value < N8 ? 8
-        : value < N9 ? 9
+        value < 128   ? 1
+        : value < 16384 ? 2
+        : value < 2097152 ? 3
+        : value < 268435456 ? 4
+        : value < 34359738368 ? 5
+        : value < 4398046511104 ? 6
+        : value < 562949953421312 ? 7
+        : value < 72057594037927936 ? 8
+        : value < 9223372036854775808 ? 9
         : 10
     );
-};
+}
+exports.byteLengthUInt = byteLengthUInt;
 
 exports.byteLengthInt = function(value)
 {
-    return UIntByteLength((value & 1) ? (value + 1) / -2 : value / 2);
+    return byteLengthUInt(value >= 0 ? value * 2 : (value * -2) - 1);
 };
