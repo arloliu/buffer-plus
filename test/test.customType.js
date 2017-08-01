@@ -1,8 +1,8 @@
 require('chai').should();
-const BufferPlus = require('../src/index.js');
+const BufferPlus = require('../lib/index.js');
 
 describe('Custom. Type', function() {
-    const bp = BufferPlus.allocUnsafe(1024);
+    var bp = BufferPlus.allocUnsafe(1);
 
     beforeEach(function() {
         bp.reset();
@@ -56,13 +56,16 @@ describe('Custom. Type', function() {
     it('#basic', function() {
 
         const testStr = 'header string';
+        const testStr2 = 'header string2';
         const testStrSize = bp.byteLengthHeaderString(testStr);
         bp.writeUInt32LE(testStrSize);
         bp.writeHeaderString(testStr);
+        bp.writeHeaderString(testStr2);
 
         bp.moveTo(0);
         bp.readUInt32LE().should.equal(testStrSize);
         bp.readHeaderString().should.equal(testStr);
+        bp.readHeaderString().should.equal(testStr2);
     });
 
     it('#compound', function() {
@@ -92,10 +95,11 @@ describe('Custom. Type', function() {
         }
 
         bp.writeArray(items, 'Header');
+        bp.writeArray(items, 'Header');
 
         bp.moveTo(0);
-        const decodeItems = bp.readArray('Header');
-        decodeItems.should.deep.equal(items);
+        bp.readArray('Header').should.deep.equal(items);
+        bp.readArray('Header').should.deep.equal(items);
 
     });
 

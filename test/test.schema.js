@@ -1,5 +1,5 @@
 require('chai').should();
-const BufferPlus = require('../src/index.js');
+const BufferPlus = require('../lib/index.js');
 
 const testHeader = {
     headerLen: 2000,
@@ -11,6 +11,19 @@ const testHeader = {
         {group: 'group1', name: '中文測試1', count: 5000},
         {group: 'group2', name: '中文測試2', count: 5001},
         {group: 'group3', name: '中文測試3', count: 0x123456789},
+    ]
+};
+
+const testHeader2 = {
+    headerLen: 3000,
+    name: 'test header2',
+    type: 0x8,
+    serial: 0xa23b567812345f7,
+    source: {type: 'client', ip: '192.168.0.1'},
+    items: [
+        {group: 'group1', name: '中文測試1', count: 4000},
+        {group: 'group2', name: '中文測試2', count: 4001},
+        {group: 'group3', name: '中文測試3', count: 0xa23456f89},
     ]
 };
 
@@ -44,12 +57,18 @@ describe('Custom. Schema', function() {
 
     it('#Header(auto)', function() {
 
+        let offset = 0;
         bp.writeSchema('Header', testHeader);
-        bp.length.should.equal(BufferPlus.getSchema('Header').byteLength(testHeader));
-        const decodeBuf = BufferPlus.from(bp);
+        offset += bp.byteLengthSchema('Header', testHeader);
+        bp.length.should.equal(offset);
 
-        const result = decodeBuf.readSchema('Header');
-        result.should.deep.equal(testHeader);
+        bp.writeSchema('Header', testHeader2);
+        offset += bp.byteLengthSchema('Header', testHeader2);
+        bp.length.should.equal(offset);
+
+        const decodeBuf = BufferPlus.from(bp);
+        decodeBuf.readSchema('Header').should.deep.equal(testHeader);
+        decodeBuf.readSchema('Header').should.deep.equal(testHeader2);
     });
 
     it('#Header(insert)', function() {
