@@ -244,7 +244,7 @@ class BufferSchema
     _buildDecodeFuncStr(inner)
     {
         const rootPrefix = inner ? [] : [
-            'var buffer = rBuffer._buf;',
+            'var buffer = rBuffer.getRemainingBuffer();',
             'helper.offset = 0;',
         ];
         const decodePrefixs = [
@@ -252,7 +252,7 @@ class BufferSchema
             'var data = {};',
         ];
         const decodeSuffixs = [
-            inner ? '' : 'rBuffer._forceMoveTo(helper.offset);',
+            inner ? '' : 'rBuffer._forceSkipTo(helper.offset);',
             'return data;'
         ];
 
@@ -290,7 +290,7 @@ class BufferSchema
                 inner ? [] : 'var byteCount = 0;',
                 inner ? [] : this._byteLengthCtx,
                 inner ? [] : `wBuffer._ensureWriteSize(byteCount);`,
-                inner ? [] : `var buffer = wBuffer._buf;`,
+                inner ? [] : `var buffer = wBuffer._buf.slice(wBuffer._pos, wBuffer._len);`,
                 this._encodeCtx,
                 encodeSuffixs
             )

@@ -115,6 +115,11 @@ class BufferPlus
         return this._buf.toString(val, 0, this._len);
     }
 
+    getRemainingBuffer()
+    {
+        return this._buf.slice(this._pos, this._len);
+    }
+
     moveTo(position)
     {
         if (!Number.isSafeInteger(position))
@@ -177,6 +182,7 @@ class BufferPlus
         return this;
     }
 
+    // readString(length[, encoding])
     readString(length, encoding)
     {
         const len = (typeof length === 'number') ? length : this._len;
@@ -297,7 +303,16 @@ class BufferPlus
         return bytes;
     }
 
+    byteLengthSchema(name, obj)
+    {
+        const schema = BufferPlus.getSchema(name);
+        if (!schema)
+            throw new Error('Schema "' + name + '" does not exist');
 
+        schema.buildOnce();
+
+        return schema.byteLength(obj);
+    }
 
     // Signed Integers
     readInt8() { return this._readNumber(Buffer.prototype.readInt8, 1); }
@@ -551,9 +566,9 @@ class BufferPlus
         this._pos = this._pos + offset;
     }
 
-    _forceMoveTo(position)
+    _forceSkipTo(offset)
     {
-        this._pos = position;
+        this._pos += offset;
     }
 
     _calculateOffset(insertOffset)
