@@ -10,7 +10,8 @@ const UInt64LE = require('int64-buffer').Uint64LE;
 const VarInt = require('./VarInt.js');
 
 // eslint-disable-next-line no-unused-vars
-const debug = require('util').debuglog('bp');
+const nodeUtil = require('util');
+const debug = (nodeUtil && nodeUtil.debuglog) ? nodeUtil.debuglog('bp') : function() {};
 
 
 class BufferSchema
@@ -143,25 +144,25 @@ class BufferSchema
 
 
         this._decodeCtx.push(`
-            let ${arrayLenVal} = helper.readVarUInt(buffer);
+            var ${arrayLenVal} = helper.readVarUInt(buffer);
             ${readItem} = [];
-            for (let ${arrayIter} = 0; ${arrayIter} < ${arrayLenVal}; ${arrayIter}++) {
+            for (var ${arrayIter} = 0; ${arrayIter} < ${arrayLenVal}; ${arrayIter}++) {
                 ${funcStr.read}
             }
         `);
 
         this._encodeCtx.push(`
-            let ${arrayLenVal} = ${writeItem}.length;
+            var ${arrayLenVal} = ${writeItem}.length;
             helper.writeVarUInt(buffer, ${arrayLenVal});
-            for (let ${arrayIter} = 0; ${arrayIter} < ${arrayLenVal}; ${arrayIter}++) {
+            for (var ${arrayIter} = 0; ${arrayIter} < ${arrayLenVal}; ${arrayIter}++) {
                 ${funcStr.write}
             }
         `);
 
         this._byteLengthCtx.push(`
-            let ${arrayLenVal2} = ${writeItem}.length;
+            var ${arrayLenVal2} = ${writeItem}.length;
             byteCount += helper.byteLengthVarUInt(${arrayLenVal2});
-            for (let ${arrayIter2} = 0; ${arrayIter2} < ${arrayLenVal2}; ${arrayIter2}++) {
+            for (var ${arrayIter2} = 0; ${arrayIter2} < ${arrayLenVal2}; ${arrayIter2}++) {
                 ${sizeFuncStr}
             }
         `);
@@ -195,26 +196,26 @@ class BufferSchema
     getDecodeNameFuncStr(funcName)
     {
         const decodeFuncStr = this._buildDecodeFuncStr(true);
-        return `const ${funcName} = function (buffer, helper) {${decodeFuncStr}};`;
+        return `var ${funcName} = function (buffer, helper) {${decodeFuncStr}};`;
     }
 
     getEncodeNameFuncStr(funcName)
     {
         const encodeFuncStr = this._buildEncodeFuncStr(true);
-        return `const ${funcName} = function (buffer, json, helper) {${encodeFuncStr}};`;
+        return `var ${funcName} = function (buffer, json, helper) {${encodeFuncStr}};`;
     }
 
     getByteLengthNameFuncStr(funcName)
     {
         const byteLengthFuncStr = this._buildByteLengthFuncStr(true);
-        return `const ${funcName} = function (json, helper) {${byteLengthFuncStr}};`;
+        return `var ${funcName} = function (json, helper) {${byteLengthFuncStr}};`;
     }
 
     _addRefVal(assignVal)
     {
         const refVal = `ref${this._refIndex}`;
         this._refIndex++;
-        this._refCtx.push(`const ${refVal} = ${assignVal};`);
+        this._refCtx.push(`var ${refVal} = ${assignVal};`);
         return refVal;
     }
 
@@ -224,15 +225,33 @@ class BufferSchema
         return BufferPlus._getDataTypeByteLength(value, dataType, encoding);
     }
 
+    _compactFuncStr(array)
+    {
+        const trimArray = array.map((item) => {
+            console.log('item type:' + typeof item);
+            console.log(item);
+            if (typeof item !== 'string')
+                return '';
+
+            let result = '';
+            item = item.trim();
+            item.split('\n').forEach((line) => {
+                result += line.trim();
+            });
+            return result;
+        });
+        return trimArray.join('');
+    }
+
     _buildDecodeFuncStr(inner)
     {
         const rootPrefix = inner ? [] : [
-            'const buffer = rBuffer._buf;',
+            'var buffer = rBuffer._buf;',
             'helper.offset = 0;',
         ];
         const decodePrefixs = [
-            `const strEnc = '${this._encoding}';`,
-            'const data = {};',
+            `var strEnc = '${this._encoding}';`,
+            'var data = {};',
         ];
         const decodeSuffixs = [
             inner ? '' : 'rBuffer._forceMoveTo(helper.offset);',
@@ -242,11 +261,13 @@ class BufferSchema
         for (let name in this._decodeInnerFuncs)
             decodePrefixs.unshift(this._decodeInnerFuncs[name]);
 
-        return rootPrefix.concat(
-            decodePrefixs,
-            this._decodeCtx,
-            decodeSuffixs
-        ).join('\n');
+        return this._compactFuncStr(
+            rootPrefix.concat(
+                decodePrefixs,
+                this._decodeCtx,
+                decodeSuffixs
+            )
+        );
     }
 
     _buildEncodeFuncStr(inner)
@@ -264,16 +285,18 @@ class BufferSchema
         for (let name in this._byteLengthInnerFuncs)
             encodePrefixs.unshift(this._byteLengthInnerFuncs[name]);
 
-        return encodePrefixs.concat(
-            this._refCtx,
-            inner ? [] : 'helper.offset = 0;',
-            inner ? [] : 'let byteCount = 0;',
-            inner ? [] : this._byteLengthCtx,
-            inner ? [] : `wBuffer._ensureWriteSize(byteCount);`,
-            inner ? [] : `const buffer = wBuffer._buf;`,
-            this._encodeCtx,
-            encodeSuffixs
-        ).join('\n');
+        return this._compactFuncStr(
+            encodePrefixs.concat(
+                this._refCtx,
+                inner ? [] : 'helper.offset = 0;',
+                inner ? [] : 'var byteCount = 0;',
+                inner ? [] : this._byteLengthCtx,
+                inner ? [] : `wBuffer._ensureWriteSize(byteCount);`,
+                inner ? [] : `var buffer = wBuffer._buf;`,
+                this._encodeCtx,
+                encodeSuffixs
+            )
+        );
     }
 
     _buildByteLengthFuncStr(inner)
@@ -281,8 +304,8 @@ class BufferSchema
 
         const prefixs = [
             // 'if (!json instanceof Object) throw new TypeError("Invalid json data for encoder");',
-            `const strEnc = '${this._encoding}';`,
-            'let byteCount = 0;'
+            `var strEnc = '${this._encoding}';`,
+            'var byteCount = 0;'
         ];
         const suffixs = [
             'return byteCount;'
@@ -291,11 +314,13 @@ class BufferSchema
         for (let name in this._byteLengthInnerFuncs)
             prefixs.unshift(this._byteLengthInnerFuncs[name]);
 
-        return prefixs.concat(
-            this._refCtx,
-            this._byteLengthCtx,
-            suffixs
-        ).join('\n');
+        return this._compactFuncStr(
+            prefixs.concat(
+                this._refCtx,
+                this._byteLengthCtx,
+                suffixs
+            )
+        );
     }
 } // class BufferSchema
 
@@ -304,56 +329,56 @@ class BufferSchema
 // helper read/write Int64
 function readInt64BE(buffer)
 {
-    const value = new Int64BE(buffer.slice(helper.offset, helper.offset + 8));
+    var value = new Int64BE(buffer.slice(helper.offset, helper.offset + 8));
     helper.offset += 8;
     return value.toNumber();
 }
 
 function readInt64LE(buffer)
 {
-    const value = new Int64LE(buffer.slice(helper.offset, helper.offset + 8));
+    var value = new Int64LE(buffer.slice(helper.offset, helper.offset + 8));
     helper.offset += 8;
     return value.toNumber();
 }
 
 function readUInt64BE(buffer)
 {
-    const value = new UInt64BE(buffer.slice(helper.offset, helper.offset + 8));
+    var value = new UInt64BE(buffer.slice(helper.offset, helper.offset + 8));
     helper.offset += 8;
     return value.toNumber();
 }
 
 function readUInt64LE(buffer)
 {
-    const value = new UInt64LE(buffer.slice(helper.offset, helper.offset + 8));
+    var value = new UInt64LE(buffer.slice(helper.offset, helper.offset + 8));
     helper.offset += 8;
     return value.toNumber();
 }
 
 function writeInt64BE(buffer, value)
 {
-    const int64 = new Int64BE(value);
+    var int64 = new Int64BE(value);
     int64.toBuffer().copy(buffer, helper.offset, 0, 8);
     helper.offset += 8;
 }
 
 function writeInt64LE(buffer, value)
 {
-    const int64 = new Int64LE(value);
+    var int64 = new Int64LE(value);
     int64.toBuffer().copy(buffer, helper.offset, 0, 8);
     helper.offset += 8;
 }
 
 function writeUInt64BE(buffer, value)
 {
-    const int64 = new UInt64BE(value);
+    var int64 = new UInt64BE(value);
     int64.toBuffer().copy(buffer, helper.offset, 0, 8);
     helper.offset += 8;
 }
 
 function writeUInt64LE(buffer, value)
 {
-    const int64 = new UInt64LE(value);
+    var int64 = new UInt64LE(value);
     int64.toBuffer().copy(buffer, helper.offset, 0, 8);
     helper.offset += 8;
 }
@@ -361,9 +386,9 @@ function writeUInt64LE(buffer, value)
 // helper read/write var uint
 function readVarUInt(buffer)
 {
-    let val = 0;
-    let shift = 0;
-    let byte;
+    var val = 0;
+    var shift = 0;
+    var byte;
     do
     {
         byte = buffer[helper.offset++];
@@ -396,28 +421,28 @@ function writeVarUInt(buffer, value)
 // helper read/write var int
 function readVarInt(buffer)
 {
-    const val = readVarUInt(buffer);
+    var val = readVarUInt(buffer);
     return (val & 1) ? (val + 1) / -2 : val / 2;
 }
 
 function writeVarInt(buffer, value)
 {
-    const val = value >= 0 ? value * 2 : (value * -2) - 1;
+    var val = value >= 0 ? value * 2 : (value * -2) - 1;
     writeVarUInt(buffer, val);
 }
 
 // helper read/write string
 function readString(buffer, strEnc)
 {
-    const len = readVarUInt(buffer);
-    const str = buffer.toString(strEnc, helper.offset, helper.offset + len);
+    var len = readVarUInt(buffer);
+    var str = buffer.toString(strEnc, helper.offset, helper.offset + len);
     helper.offset += len;
     return str;
 }
 
 function writeString(buffer, value, encoding)
 {
-    const len = Buffer.byteLength(value);
+    var len = Buffer.byteLength(value);
     writeVarUInt(buffer, len);
     buffer.write(value, helper.offset, len, encoding);
     helper.offset += len;
@@ -426,15 +451,15 @@ function writeString(buffer, value, encoding)
 // helper read/write Buffer
 function readBuffer(buffer)
 {
-    const len = readVarUInt(buffer);
-    const buf = buffer.slice(helper.offset, helper.offset + len);
+    var len = readVarUInt(buffer);
+    var buf = buffer.slice(helper.offset, helper.offset + len);
     helper.offset += len;
     return buf;
 }
 
 function writeBuffer(buffer, value)
 {
-    const len = value.len;
+    var len = value.len;
     writeVarUInt(buffer, len);
     value.copy(buffer, helper.offset);
     helper.offset += len;
@@ -467,13 +492,13 @@ const helper = {
 
     byteLengthString: function(value, encoding)
     {
-        const len = Buffer.byteLength(value);
+        var len = Buffer.byteLength(value);
         return VarInt.byteLengthUInt(len) + len;
     },
 
     byteLengthBuffer: function(value)
     {
-        const len = value.length;
+        var len = value.length;
         return VarInt.byteLengthUInt(len) + len;
     },
 

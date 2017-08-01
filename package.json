@@ -1,8 +1,8 @@
 {
   "name": "buffer-plus",
   "version": "1.0.0",
-  "description": "Enhanced buffer with offset calculation, schematic and customize type support.",
-  "main": "lib/BufferPlus.js",
+  "description": "Enhanced buffer with offset calculation auto-resize, static schematic and customize type support.",
+  "main": "lib/index.js",
   "keywords": [
     "buffer",
     "schema",
@@ -22,9 +22,11 @@
   },
   "homepage": "https://github.com/arloliu/buffer-plus",
   "scripts": {
-    "test": "mocha"
+    "test": "mocha",
+    "build": "babel --no-comments  --minified -d lib src"
   },
   "devDependencies": {
+    "babel-cli": "^6.24.1",
     "babel-core": "^6.25.0",
     "babel-eslint": "^7.2.3",
     "babel-loader": "^7.1.1",
@@ -33,8 +35,7 @@
     "chai": "^4.1.0",
     "eslint": "^4.3.0",
     "mocha": "^3.4.2",
-    "schemapack": "^1.4.2",
-    "webpack": "^3.3.0"
+    "schemapack": "^1.4.2"
   },
   "dependencies": {
     "int64-buffer": "^0.1.9"

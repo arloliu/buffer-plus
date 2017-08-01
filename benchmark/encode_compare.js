@@ -1,5 +1,5 @@
 const Benchmark = require('benchmark');
-const BufferPlus = require('../src/index.js');
+const BufferPlus = require('../lib/index.js');
 const sp = require('schemapack');
 
 const bp = BufferPlus.allocUnsafe(32);
@@ -44,11 +44,11 @@ const suite = new Benchmark.Suite();
 
 function writeVarUInt(value, buffer)
 {
-    // while (value >= 2147483648) // value >= 2^31
-    // {
-    //     buffer[gp.offset++] = (value & 0xFF) | 0x80;
-    //     value /= 128;
-    // }
+    while (value >= 2147483648) // value >= 2^31
+    {
+        buffer[gp.offset++] = (value & 0xFF) | 0x80;
+        value /= 128;
+    }
 
     while (value > 127)
     {
@@ -112,7 +112,7 @@ function nativeBpWrite(json)
     bp.reset();
 
     //if (!testJson instanceof Object) throw new TypeError("Invalid json data for encoder");
-    const strEnc = 'utf8';
+    var strEnc = 'utf8';
     bp.writeUInt32BE(json.field1);
     bp.writePackedString(json.field2, strEnc);
 
@@ -143,7 +143,6 @@ suite
 // })
 .add('BP Schema', function() {
     bp.reset();
-    //bp.writeSchema('test', testJson);
     testSchema.encode(bp, testJson);
 })
 .add('Schemapack', function() {

@@ -1,11 +1,11 @@
 'use strict';
-const MSB_BYTES = ~(0x7F);
+var MSB_BYTES = ~(0x7F);
 
 // Encode
 function encodeUInt(value, output)
 {
-    let val = value;
-    let count = 0;
+    var val = value;
+    var count = 0;
 
     while (val >= 2147483648) // val >= 2^31
     {
@@ -26,7 +26,7 @@ exports.encodeUInt = encodeUInt;
 
 exports.encodeInt = function(value, output)
 {
-    const val = value >= 0 ? value * 2 : (value * -2) - 1;
+    var val = value >= 0 ? value * 2 : (value * -2) - 1;
     return encodeUInt(val, output);
 };
 
@@ -34,10 +34,10 @@ exports.encodeInt = function(value, output)
 // return [value, byte length]
 function decodeUInt(buf, offset, endBoundary)
 {
-    let val = 0;
-    let shift = 0;
-    let byte;
-    let count = offset;
+    var val = 0;
+    var shift = 0;
+    var byte;
+    var count = offset;
     do
     {
         if (count >= endBoundary)
@@ -57,23 +57,23 @@ exports.decodeUInt = decodeUInt;
 
 exports.decodeInt = function(buf, offset, endBoundary)
 {
-    const result = decodeUInt(buf, offset, endBoundary);
-    const val = (result[0] & 1) ? (result[0] + 1) / -2 : result[0] / 2;
+    var result = decodeUInt(buf, offset, endBoundary);
+    var val = (result[0] & 1) ? (result[0] + 1) / -2 : result[0] / 2;
     return [val, result[1]];
 };
 
 
 
 
-// const N1 = Math.pow(2, 7);
-// const N2 = Math.pow(2, 14);
-// const N3 = Math.pow(2, 21);
-// const N4 = Math.pow(2, 28);
-// const N5 = Math.pow(2, 35);
-// const N6 = Math.pow(2, 42);
-// const N7 = Math.pow(2, 49);
-// const N8 = Math.pow(2, 56);
-// const N9 = Math.pow(2, 63);
+// var N1 = Math.pow(2, 7);
+// var N2 = Math.pow(2, 14);
+// var N3 = Math.pow(2, 21);
+// var N4 = Math.pow(2, 28);
+// var N5 = Math.pow(2, 35);
+// var N6 = Math.pow(2, 42);
+// var N7 = Math.pow(2, 49);
+// var N8 = Math.pow(2, 56);
+// var N9 = Math.pow(2, 63);
 function byteLengthUInt(value)
 {
     return (

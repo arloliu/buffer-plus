@@ -8,9 +8,9 @@ const testHeader = {
     serial: 0x123456781234567,
     source: {type: 'client', ip: '127.0.0.1'},
     items: [
-        {group: 'group1', 'name': 'item1', count: 5000},
-        {group: 'group2', 'name': 'item2', count: 5001},
-        {group: 'group3', 'name': 'item3', count: 0x123456789},
+        {group: 'group1', name: '中文測試1', count: 5000},
+        {group: 'group2', name: '中文測試2', count: 5001},
+        {group: 'group3', name: '中文測試3', count: 0x123456789},
     ]
 };
 

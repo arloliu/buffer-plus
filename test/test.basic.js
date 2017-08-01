@@ -1,5 +1,5 @@
 require('chai').should();
-const BufferPlus = require('../src/index.js');
+const BufferPlus = require('../lib/index.js');
 
 describe('Class methods', function() {
     it('#alloc', function() {
@@ -148,28 +148,45 @@ describe('Basic', function() {
 describe('Read/Write', function() {
     describe('#String', function() {
         it('auto', function() {
-            const testStr = 'test';
+            const utf8Str = '中文測試 string';
+            const asciiStr = 'ascii string test';
+            const utf8StrBytes = BufferPlus.byteLength(utf8Str);
+            const asciiStrBytes = BufferPlus.byteLength(asciiStr, 'ascii');
+
             const bp = BufferPlus.allocUnsafe(1);
-            bp.writeString(testStr);
-            bp.should.have.lengthOf(testStr.length);
+
+            bp.writeString(utf8Str);
+            bp.should.have.lengthOf(utf8StrBytes);
+
+            bp.writeString(asciiStr, 'ascii');
+            bp.should.have.lengthOf(utf8StrBytes + asciiStrBytes);
 
             bp.moveTo(0);
-            const str = bp.readString(testStr.length);
-            str.should.equal(testStr);
+            bp.readString(utf8StrBytes, 'utf8').should.equal(utf8Str);
+            bp.readString(asciiStrBytes, 'ascii').should.equal(asciiStr);
         });
 
         it('insert', function() {
-            const testStr = 'test';
+            const utf8Str = '中文測試 string';
+            const asciiStr = 'ascii string test';
+            const utf8StrBytes = BufferPlus.byteLength(utf8Str);
+            const asciiStrBytes = BufferPlus.byteLength(asciiStr, 'ascii');
             const bp = BufferPlus.allocUnsafe(32);
-            bp.writeString(testStr, 6);
-            bp.should.have.lengthOf(testStr.length + 6);
 
-            bp.moveTo(1);
-            bp.writeString(testStr);
-            bp.should.have.lengthOf(testStr.length + 6);
-            bp.moveTo(6);
-            const str = bp.readString(testStr.length);
-            str.should.equal(testStr);
+            // insert utf-8 string after ascii string first
+            bp.writeString(utf8Str, asciiStrBytes, 'utf8');
+            bp.should.have.lengthOf(utf8StrBytes + asciiStrBytes);
+
+            bp.writeString(asciiStr, 'ascii');
+            bp.should.have.lengthOf(utf8StrBytes + asciiStrBytes);
+
+            bp.moveTo(0);
+            bp.should.have.lengthOf(utf8StrBytes + asciiStrBytes);
+
+            bp.readString(asciiStrBytes, 'ascii').should.equal(asciiStr);
+
+            bp.moveTo(asciiStrBytes);
+            bp.readString(utf8StrBytes).should.equal(utf8Str);
         });
     });
 

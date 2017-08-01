@@ -1,5 +1,6 @@
 'use strict';
-const Buffer = require('buffer').Buffer;
+const nodeBuffer = require('buffer');
+const Buffer = nodeBuffer.Buffer;
 const Int64BE = require('int64-buffer').Int64BE;
 const Int64LE = require('int64-buffer').Int64LE;
 const UInt64BE = require('int64-buffer').Uint64BE;
@@ -7,7 +8,8 @@ const UInt64LE = require('int64-buffer').Uint64LE;
 const VarInt = require('./VarInt.js');
 
 // eslint-disable-next-line no-unused-vars
-const debug = require('util').debuglog('bp');
+const nodeUtil = require('util');
+const debug = (nodeUtil && nodeUtil.debuglog) ? nodeUtil.debuglog('bp') : function() {};
 
 class BufferPlus
 {
@@ -117,8 +119,8 @@ class BufferPlus
     {
         if (!Number.isSafeInteger(position))
             throw new TypeError('position must be a valid integer number');
-        if (position < 0 || position >= this._len)
-            throw new RangeError('position must be between 0 to length - 1, len:'+ this._len + ' position:' + position);
+        if (position < 0 || (position > 0 && position >= this._len))
+            throw new RangeError('position must be between 0 to length - 1');
         this._pos = position;
     }
 
@@ -181,7 +183,7 @@ class BufferPlus
         const end = Math.min(this._len, this._pos + len);
         const encodingVal = (typeof encoding === 'string') ? encoding : this._defaultEncoding;
 
-        const value = this._buf.slice(this._pos, end).toString(encodingVal);
+        const value = this._buf.toString(encodingVal, this._pos, end);
         this._pos = end;
         return value;
     }
@@ -221,7 +223,6 @@ class BufferPlus
                     throw new TypeError('encoding must be a valid string encoding');
             }
         }
-
         const byteLength = Buffer.byteLength(value, encoding);
 
         this._ensureWriteSize(byteLength, insertOffset);
@@ -230,7 +231,7 @@ class BufferPlus
         this._buf.write(value, offset, byteLength, encoding);
 
         // increase position when write offset is smaller or equals to current position
-        if (offset <= this._pos);
+        if (offset <= this._pos)
             this._pos += byteLength;
 
         return this;
@@ -643,34 +644,6 @@ class BufferPlus
 
         if (offset <= this._pos)
             this._pos += 8;
-    }
-
-    _readNumberDirect()
-    {
-        const value = func.call(this._buf, this._pos);
-        this._pos += size;
-        return value;
-    }
-
-    _readNumber64Direct(int64Class)
-    {
-        const value = new int64Class(this._buf.slice(this._pos, this._pos + 8));
-        this._pos += 8;
-        return value.toNumber();
-    }
-
-    _writeNumberDirect(func, size, value)
-    {
-        func.call(this._buf, value, this._pos, true);
-        this._pos += size;
-        return this;
-    }
-
-    _writeNumber64Direct(int64Class, value)
-    {
-        const int64 = new int64Class(value);
-        int64.toBuffer().copy(this._buf, this._pos, 0, 8);
-        this._pos += 8;
     }
 }
 
