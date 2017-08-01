@@ -238,180 +238,128 @@ describe('Read/Write', function() {
         });
     });
 
-    describe('#Int8', function() {
-        it('auto', function() { testNumberAuto('Int8'); });
-        it('insert', function() { testNumberInsert('Int8'); });
+    describe('#Fixed Number', function() {
+        it('auto', function() {
+            const testTypes = [
+                'Int8', 'UInt8',
+                'Int16BE', 'UInt16LE',
+                'Int32BE', 'UInt32LE',
+                'Int64BE', 'UInt64LE',
+                'FloatBE', 'FloatLE',
+                'DoubleBE', 'DoubleLE',
+            ];
+            testTypes.forEach((type) => {
+                testNumberAuto(type);
+            });
+        });
+        it('insert', function() {
+            const testTypes = [
+                'Int8', 'UInt8',
+                'Int16BE', 'UInt16LE',
+                'Int32BE', 'UInt32LE',
+                'Int64BE', 'UInt64LE',
+                'FloatBE', 'FloatLE',
+                'DoubleBE', 'DoubleLE',
+            ];
+            testTypes.forEach((type) => {
+                testNumberInsert(type);
+            });
+        });
     });
-    describe('#Int16BE', function() {
-        it('auto', function() { testNumberAuto('Int16BE'); });
-        it('insert', function() { testNumberInsert('Int16BE'); });
-    });
-    describe('#Int16LE', function() {
-        it('auto', function() { testNumberAuto('Int16LE'); });
-        it('insert', function() { testNumberInsert('Int16LE'); });
-    });
-    describe('#Int32BE', function() {
-        it('auto', function() { testNumberAuto('Int32BE'); });
-        it('insert', function() { testNumberInsert('Int32BE'); });
-    });
-    describe('#Int32LE', function() {
-        it('auto', function() { testNumberAuto('Int32LE'); });
-        it('insert', function() { testNumberInsert('Int32LE'); });
-    });
-    describe('#Int64BE', function() {
-        it('auto', function() { testNumberAuto('Int64BE'); });
-        it('insert', function() { testNumberInsert('Int64BE'); });
-    });
-    describe('#Int64LE', function() {
-        it('auto', function() { testNumberAuto('Int64LE'); });
-        it('insert', function() { testNumberInsert('Int64LE'); });
-    });
-
-
-    describe('#UInt8', function() {
-        it('auto', function() { testNumberAuto('UInt8'); });
-        it('insert', function() { testNumberInsert('UInt8'); });
-    });
-    describe('#UInt16BE', function() {
-        it('auto', function() { testNumberAuto('UInt16BE'); });
-        it('insert', function() { testNumberInsert('UInt16BE'); });
-    });
-    describe('#UInt16LE', function() {
-        it('auto', function() { testNumberAuto('UInt16LE'); });
-        it('insert', function() { testNumberInsert('UInt16LE'); });
-    });
-    describe('#UInt32BE', function() {
-        it('auto', function() { testNumberAuto('UInt32BE'); });
-        it('insert', function() { testNumberInsert('UInt32BE'); });
-    });
-    describe('#UInt32LE', function() {
-        it('auto', function() { testNumberAuto('UInt32LE'); });
-        it('insert', function() { testNumberInsert('UInt32LE'); });
-    });
-    describe('#UInt64BE', function() {
-        it('auto', function() { testNumberAuto('UInt64BE'); });
-        it('insert', function() { testNumberInsert('UInt64BE'); });
-    });
-    describe('#UInt64LE', function() {
-        it('auto', function() { testNumberAuto('UInt64LE'); });
-        it('insert', function() { testNumberInsert('UInt64LE'); });
-    });
-
-
-    describe('#Int8Direct', function() {
-        it('auto', function() { testNumberAuto('Int8Direct'); });
-    });
-    describe('#Int16BEDirect', function() {
-        it('auto', function() { testNumberAuto('Int16BEDirect'); });
-    });
-    describe('#Int16LEDirect', function() {
-        it('auto', function() { testNumberAuto('Int16LEDirect'); });
-    });
-    describe('#Int32BEDirect', function() {
-        it('auto', function() { testNumberAuto('Int32BEDirect'); });
-    });
-    describe('#Int32LEDirect', function() {
-        it('auto', function() { testNumberAuto('Int32LEDirect'); });
-    });
-    describe('#Int64BEDirect', function() {
-        it('auto', function() { testNumberAuto('Int64BEDirect'); });
-    });
-    describe('#Int64LEDirect', function() {
-        it('auto', function() { testNumberAuto('Int64LEDirect'); });
-    });
-
-
-    describe('#UInt8Direct', function() {
-        it('auto', function() { testNumberAuto('UInt8Direct'); });
-    });
-    describe('#UInt16BEDirect', function() {
-        it('auto', function() { testNumberAuto('UInt16BEDirect'); });
-    });
-    describe('#UInt16LEDirect', function() {
-        it('auto', function() { testNumberAuto('UInt16LEDirect'); });
-    });
-    describe('#UInt32BEDirect', function() {
-        it('auto', function() { testNumberAuto('UInt32BEDirect'); });
-    });
-    describe('#UInt32LEDirect', function() {
-        it('auto', function() { testNumberAuto('UInt32LEDirect'); });
-    });
-    describe('#UInt64BEDirect', function() {
-        it('auto', function() { testNumberAuto('UInt64BEDirect'); });
-    });
-    describe('#UInt64LEDirect', function() {
-        it('auto', function() { testNumberAuto('UInt64LEDirect'); });
-    });
-
 
     // Variable Integers
     describe('#VarUInt', function() {
         it('auto', function() {
+            const testValues = [
+                0xFF, 0xFFFF,
+                0xFFFF, 0xFFFFFFFF,
+                0xFFFF123, 0xFFFFFFFF123,
+                Number.MAX_SAFE_INTEGER
+            ];
             const bp = BufferPlus.allocUnsafe(64);
-            bp.writeVarUInt(0xFF);
-            bp.writeVarUInt(0xFFFF);
-            bp.writeVarUInt(0xFFFFFFFF);
-            bp.writeVarUInt(Number.MAX_SAFE_INTEGER);
+            testValues.forEach((value) => {
+                bp.writeVarInt(value);
+            });
 
+            let byteCount = 0;
             bp.moveTo(0);
-            bp.readVarUInt().should.equal(0xFF);
-            bp.readVarUInt().should.equal(0xFFFF);
-            bp.readVarUInt().should.equal(0xFFFFFFFF);
-            bp.readVarUInt().should.equal(Number.MAX_SAFE_INTEGER);
+            testValues.forEach((value) => {
+                bp.readVarInt().should.equal(value);
+                byteCount += bp.byteLengthVarInt(value);
+                bp.position.should.equal(byteCount);
+            });
         });
 
         it('insert', function() {
+            const testValues = [
+                0xFF, 0xFFFF,
+                0xFFFF, 0xFFFFFFFF,
+                0xFFFF123, 0xFFFFFFFF123,
+                Number.MAX_SAFE_INTEGER
+            ];
             const bp = BufferPlus.allocUnsafe(64);
 
-            bp.writeVarUInt(0xFF, 10);
-            bp.writeVarUInt(0xFFFF, 10);
-            bp.writeVarUInt(0xFFFFFFFF, 10);
-            bp.writeVarUInt(Number.MAX_SAFE_INTEGER, 10);
+            testValues.forEach((value) => {
+                bp.writeVarInt(value, 10);
+            });
 
+            let byteCount = 10;
             bp.moveTo(10);
-            bp.readVarUInt().should.equal(Number.MAX_SAFE_INTEGER);
-            bp.readVarUInt().should.equal(0xFFFFFFFF);
-            bp.readVarUInt().should.equal(0xFFFF);
-            bp.readVarUInt().should.equal(0xFF);
-
+            testValues.reverse().forEach((value) => {
+                bp.readVarInt().should.equal(value);
+                byteCount += bp.byteLengthVarInt(value);
+                bp.position.should.equal(byteCount);
+            });
         });
     });
 
     describe('#VarInt', function() {
         it('auto', function() {
+            const testValues = [
+                127, -128,
+                32767, -32768,
+                65535, -65536,
+                4194304, -4194305,
+                Number.MAX_SAFE_INTEGER,
+                Math.floor(Number.MIN_SAFE_INTEGER / 2)
+            ];
             const bp = BufferPlus.allocUnsafe(64);
-            bp.writeVarInt(127);
-            bp.writeVarInt(-128);
-            bp.writeVarInt(32767);
-            bp.writeVarInt(-32768);
-            bp.writeVarInt(Number.MAX_SAFE_INTEGER);
-            bp.writeVarInt(Math.floor(Number.MIN_SAFE_INTEGER / 2));
 
+            testValues.forEach((value) => {
+                bp.writeVarInt(value);
+            });
+
+            let byteCount = 0;
             bp.moveTo(0);
-            bp.readVarInt().should.equal(127);
-            bp.readVarInt().should.equal(-128);
-            bp.readVarInt().should.equal(32767);
-            bp.readVarInt().should.equal(-32768);
-            bp.readVarInt().should.equal(Number.MAX_SAFE_INTEGER);
-            bp.readVarInt().should.equal(Math.floor(Number.MIN_SAFE_INTEGER / 2));
+            testValues.forEach((value) => {
+                bp.readVarInt().should.equal(value);
+                byteCount += bp.byteLengthVarInt(value);
+                bp.position.should.equal(byteCount);
+            });
         });
 
         it('insert', function() {
+            const testValues = [
+                127, -128,
+                32767, -32768,
+                65535, -65536,
+                4194304, -4194305,
+                Number.MAX_SAFE_INTEGER,
+                Math.floor(Number.MIN_SAFE_INTEGER / 2)
+            ];
             const bp = BufferPlus.allocUnsafe(64);
-            bp.writeVarInt(127, 10);
-            bp.writeVarInt(-128, 10);
-            bp.writeVarInt(32767, 10);
-            bp.writeVarInt(-32768, 10);
-            bp.writeVarInt(Number.MAX_SAFE_INTEGER, 10);
-            bp.writeVarInt(Math.floor(Number.MIN_SAFE_INTEGER / 2), 10);
 
+            testValues.forEach((value) => {
+                bp.writeVarInt(value, 10);
+            });
+
+            let byteCount = 10;
             bp.moveTo(10);
-            bp.readVarInt().should.equal(Math.floor(Number.MIN_SAFE_INTEGER / 2));
-            bp.readVarInt().should.equal(Number.MAX_SAFE_INTEGER);
-            bp.readVarInt().should.equal(-32768);
-            bp.readVarInt().should.equal(32767);
-            bp.readVarInt().should.equal(-128);
-            bp.readVarInt().should.equal(127);
+            testValues.reverse().forEach((value) => {
+                bp.readVarInt().should.equal(value);
+                byteCount += bp.byteLengthVarInt(value);
+                bp.position.should.equal(byteCount);
+            });
         });
     });
 });
@@ -436,22 +384,10 @@ const WRITE_FUNC_MAP = {
     UInt64LE: {size: 8, value: Number.MAX_SAFE_INTEGER},
     UInt64BE: {size: 8, value: Number.MAX_SAFE_INTEGER},
 
-    Int8Direct: {size: 1, value: Math.floor((0xFF / 2) - 1)},
-    Int16LEDirect: {size: 2, value: Math.floor((0xFFFF / 2) - 1)},
-    Int16BEDirect: {size: 2, value: Math.floor((0xFFFF / 2) - 1)},
-    Int32LEDirect: {size: 4, value: Math.floor((0xFFFFFFFF / 2) - 1)},
-    Int32BEDirect: {size: 4, value: Math.floor((0xFFFFFFFF / 2) - 1)},
-    Int64LEDirect: {size: 8, value: Number.MAX_SAFE_INTEGER},
-    Int64BEDirect: {size: 8, value: Number.MAX_SAFE_INTEGER},
-
-    UInt8Direct: {size: 1, value: 0xFF},
-    UInt16LEDirect: {size: 2, value: 0xFFFF},
-    UInt16BEDirect: {size: 2, value: 0xFFFF},
-    UInt32LEDirect: {size: 4, value: 0xFFFFFFFF},
-    UInt32BEDirect: {size: 4, value: 0xFFFFFFFF},
-    UInt64LEDirect: {size: 8, value: Number.MAX_SAFE_INTEGER},
-    UInt64BEDirect: {size: 8, value: Number.MAX_SAFE_INTEGER},
-
+    FloatBE: {size: 4, value: parseFloat('3.40282e-38')},
+    FloatLE: {size: 4, value: parseFloat('3.40282e-38')},
+    DoubleBE: {size: 8, value: parseFloat('3.40282e-38')},
+    DoubleLE: {size: 8, value: parseFloat('3.40282e-38')},
 };
 
 function toArray(iterator)
@@ -478,7 +414,10 @@ function testNumberAuto(type)
     bp.position.should.equal(func.size);
     bp.moveTo(0);
     const readValue = func.read.call(bp);
-    readValue.should.equal(func.value);
+    if (type.startsWith('Float') || type.startsWith('Double'))
+        readValue.should.closeTo(func.value, 0.0001);
+    else
+        readValue.should.equal(func.value);
 }
 
 function testNumberInsert(type)
@@ -489,6 +428,16 @@ function testNumberInsert(type)
     func.write.call(bp, func.value - 1, 4);
     bp.length.should.equal(4 + func.size * 2);
     bp.moveTo(4);
-    func.read.call(bp).should.equal(func.value - 1);
-    func.read.call(bp).should.equal(func.value);
+
+    if (type.startsWith('Float') || type.startsWith('Double'))
+    {
+        func.read.call(bp).should.closeTo(func.value - 1, 0.0001);
+        func.read.call(bp).should.closeTo(func.value, 0.0001);
+    }
+    else
+    {
+        func.read.call(bp).should.equal(func.value - 1);
+        func.read.call(bp).should.equal(func.value);
+    }
+
 }

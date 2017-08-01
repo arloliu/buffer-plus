@@ -1,6 +1,19 @@
 require('chai').should();
 const BufferPlus = require('../src/index.js');
 
+const testHeader = {
+    headerLen: 2000,
+    name: 'test header',
+    type: 0x8,
+    serial: 0x123456781234567,
+    source: {type: 'client', ip: '127.0.0.1'},
+    items: [
+        {group: 'group1', 'name': 'item1', count: 5000},
+        {group: 'group2', 'name': 'item2', count: 5001},
+        {group: 'group3', 'name': 'item3', count: 0x123456789},
+    ]
+};
+
 describe('Custom. Schema', function() {
     const bp = BufferPlus.allocUnsafe(1024);
 
@@ -11,14 +24,15 @@ describe('Custom. Schema', function() {
 
         const itemSchema = BufferPlus.createSchema('Item');
         itemSchema.addField('group', 'string');
+        itemSchema.addField('count', 'varint');
         itemSchema.addField('name', 'string');
-        itemSchema.addField('count', 'varuint');
 
         const headerSchema = BufferPlus.createSchema('Header');
 
         headerSchema.addField('headerLen', 'varuint');
         headerSchema.addField('name', 'string');
         headerSchema.addField('type', 'uint8');
+        headerSchema.addField('serial', 'uint64le');
         headerSchema.addField('source', BufferPlus.getSchema('Location'));
         headerSchema.addArrayField('items', BufferPlus.getSchema('Item'));
 
@@ -29,17 +43,6 @@ describe('Custom. Schema', function() {
     });
 
     it('#Header(auto)', function() {
-        const testHeader = {
-            headerLen: 2000,
-            name: 'test header',
-            type: 0x8,
-            source: {type: 'client', ip: '127.0.0.1'},
-            items: [
-                {group: 'group1', 'name': 'item1', count: 5000},
-                {group: 'group2', 'name': 'item2', count: 5001},
-                {group: 'group3', 'name': 'item3', count: 0x123456789a},
-            ]
-        };
 
         bp.writeSchema('Header', testHeader);
         bp.length.should.equal(BufferPlus.getSchema('Header').byteLength(testHeader));
@@ -50,18 +53,7 @@ describe('Custom. Schema', function() {
     });
 
     it('#Header(insert)', function() {
-        const testHeader = {
-            headerLen: 2000,
-            name: 'test header',
-            type: 0x8,
-            source: {type: 'client', ip: '127.0.0.1'},
-            items: [
-                {group: 'group1', 'name': 'item1', count: 5000},
-                {group: 'group2', 'name': 'item2', count: 5001},
-                {group: 'group3', 'name': 'item3', count: 0x123456789a},
-            ]
-        };
-        const testStr = "test string";
+        const testStr = 'test string';
         bp.writePackedString(testStr);
         bp.writeSchema('Header', testHeader, 0);
         bp.length.should.equal(bp.byteLengthPackedString(testStr) + BufferPlus.getSchema('Header').byteLength(testHeader));
