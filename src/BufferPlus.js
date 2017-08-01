@@ -499,6 +499,16 @@ class BufferPlus
         return VarInt.byteLengthUInt(value.length) + value.length;
     }
 
+    byteLengthVarInt(value)
+    {
+        return VarInt.byteLengthInt(value);
+    }
+
+    byteLengthVarUInt(value)
+    {
+        return VarInt.byteLengthUInt(value);
+    }
+
     readSchema(name)
     {
         const schema = BufferPlus.getSchema(name);
@@ -529,199 +539,6 @@ class BufferPlus
             schema.encode(this, value);
         }
 
-        return this;
-    }
-
-
-    /*** Direct methods ***/
-    readInt8Direct() { let val = this._buf.readInt8(this._pos); this._pos += 1; return val; }
-    readInt16BEDirect() { let val = this._buf.readInt16BE(this._pos); this._pos += 2; return val; }
-    readInt16LEDirect() { let val = this._buf.readInt16LE(this._pos); this._pos += 2; return val; }
-    readInt32BEDirect() { let val = this._buf.readInt32BE(this._pos); this._pos += 4; return val; }
-    readInt32LEDirect() { let val = this._buf.readInt32LE(this._pos); this._pos += 4; return val; }
-    readInt64BEDirect()
-    {
-        const value = new Int64BE(this._buf.slice(this._pos, this._pos + 8));
-        this._pos += 8;
-        return value.toNumber();
-    }
-    readInt64LEDirect()
-    {
-        const value = new Int64LE(this._buf.slice(this._pos, this._pos + 8));
-        this._pos += 8;
-        return value.toNumber();
-    }
-
-    writeInt8Direct(value) { this._pos = this._buf.writeInt8(value, this._pos); this._len = this._pos; return this; }
-    writeInt16BEDirect(value) { this._pos = this._buf.writeInt16BE(value, this._pos); this._len = this._pos; return this; }
-    writeInt16LEDirect(value) { this._pos = this._buf.writeInt16LE(value, this._pos); this._len = this._pos; return this; }
-    writeInt32BEDirect(value) { this._pos = this._buf.writeInt32BE(value, this._pos); this._len = this._pos; return this; }
-    writeInt32LEDirect(value) { this._pos = this._buf.writeInt32LE(value, this._pos); this._len = this._pos; return this; }
-    writeInt64BEDirect(value)
-    {
-        const int64 = new Int64BE(value);
-        int64.toBuffer().copy(this._buf, this._pos, 0, 8);
-        this._pos += 8;
-        this._len = this._pos;
-        return this;
-    }
-    writeInt64LEDirect(value)
-    {
-        const int64 = new Int64LE(value);
-        int64.toBuffer().copy(this._buf, this._pos, 0, 8);
-        this._pos += 8;
-        this._len = this._pos;
-        return this;
-    }
-
-
-    readUInt8Direct() { let val = this._buf.readUInt8(this._pos); this._pos += 1; return val; }
-    readUInt16BEDirect() { let val = this._buf.readUInt16BE(this._pos); this._pos += 2; return val; }
-    readUInt16LEDirect() { let val = this._buf.readUInt16LE(this._pos); this._pos += 2; return val; }
-    readUInt32BEDirect() { let val = this._buf.readUInt32BE(this._pos); this._pos += 4; return val; }
-    readUInt32LEDirect() { let val = this._buf.readUInt32LE(this._pos); this._pos += 4; return val; }
-    readUInt64BEDirect()
-    {
-        const value = new UInt64BE(this._buf.slice(this._pos, this._pos + 8));
-        this._pos += 8;
-        return value.toNumber();
-    }
-    readUInt64LEDirect()
-    {
-        const value = new UInt64LE(this._buf.slice(this._pos, this._pos + 8));
-        this._pos += 8;
-        return value.toNumber();
-    }
-
-    writeUInt8Direct(value) { this._pos = this._buf.writeUInt8(value, this._pos); this._len = this._pos; return this; }
-    writeUInt16BEDirect(value) { this._pos = this._buf.writeUInt16BE(value, this._pos); this._len = this._pos; return this; }
-    writeUInt16LEDirect(value) { this._pos = this._buf.writeUInt16LE(value, this._pos); this._len = this._pos; return this; }
-    writeUInt32BEDirect(value) { this._pos = this._len = this._buf.writeUInt32BE(value, this._pos); return this; }
-    writeUInt32LEDirect(value) { this._pos = this._buf.writeUInt32LE(value, this._pos); this._len = this._pos; return this; }
-    writeUInt64BEDirect(value)
-    {
-        const int64 = new UInt64BE(value);
-        int64.toBuffer().copy(this._buf, this._pos, 0, 8);
-        this._pos += 8;
-        this._len = this._pos;
-        return this;
-    }
-    writeUInt64LEDirect(value)
-    {
-        const int64 = new UInt64LE(value);
-        int64.toBuffer().copy(this._buf, this._pos, 0, 8);
-        this._pos += 8;
-        this._len = this._pos;
-        return this;
-    }
-
-    // Floating Points
-    readFloatBEDirect() { let val = this._buf.readFloatBE(this._pos); this._pos += 4; return val; }
-    readFloatLEDirect() { let val = this._buf.readdFloatLE(this._pos); this._pos += 4; return val; }
-
-    writeFloatBEDirect(value) { this._pos = this._buf.writeFloatBE(value, this._pos); this._len = this._pos; return this; }
-    writeFloatLEDirect(value) { this._pos = this._buf.writeFloatLE(value, this._pos); this._len = this._pos; return this; }
-
-
-    // Double Floating Points
-    readDoubleBEDirect() { let val = this._buf.readDoubleBE(this._pos); this._pos += 8; return val; }
-    readDoubleLEDirect() { let val = this._buf.readdDoubleLE(this._pos); this._pos += 8; return val; }
-
-    writeDoubleBEDirect(value) { this._pos = this._buf.writeDoubleBE(value, this._pos); this._len = this._pos; return this; }
-    writeDoubleLEDirect(value) { this._pos = this._buf.writeDoubleLE(value, this._pos); this._len = this._pos; return this; }
-
-    readVarUIntDirect()
-    {
-        const result = VarInt.decodeUInt(this._buf, this._pos, this._len);
-        this._pos += result[1];
-        return result[0];
-    }
-
-    readVarIntDirect()
-    {
-        const result = VarInt.decodeInt(this._buf, this._pos, this._len);
-        this._pos += result[1];
-        return result[0];
-    }
-
-    writeVarUIntDirect(value)
-    {
-        const output = new Array(10);
-        const count = VarInt.encodeUInt(value, output);
-        for (let i = 0; i < count; i++)
-            this._buf[this._pos++] = output[i];
-        this._len = this._pos;
-        return this;
-    }
-
-    writeVarIntDirect(value)
-    {
-        const output = new Array(10);
-        const count = VarInt.encodeInt(value, output);
-        for (let i = 0; i < count; i++)
-            this._buf[this._pos++] = output[i];
-        this._len = this._pos;
-        return this;
-    }
-
-    readStringDirect(length, encoding)
-    {
-        let end = this._pos + length;
-        let str = this._buf.toString(encoding, this._pos, end);
-        this._pos = end;
-        return str;
-    }
-
-    writeStringDirect(value, encoding)
-    {
-        this._pos += this._buf.write(value, this._pos, encoding);
-        this._len = this._pos;
-        return this;
-    }
-
-    readBufferDirect(length)
-    {
-        let end = this._pos + length;
-        let buf = this._buf.slice(this._pos, end);
-        this._pos = end;
-        return buf;
-    }
-
-    writeBufferDirect(buf)
-    {
-        this._pos += value.copy(this._buf, this._pos);
-        this._len = this._pos;
-        return this;
-    }
-
-    readPackedStringDirect(encoding)
-    {
-        const len = this.readVarUIntDirect();
-        return this.readStringDirect(len, encoding);
-    }
-
-    writePackedStringDirect(value, encoding)
-    {
-        const valueLen = Buffer.byteLength(value, encoding);
-        this.writeVarUInt(valueLen);
-
-        this._buf.write(value, this._pos, valueLen, encoding);
-        this._pos += valueLen;
-        this._len = this._pos;
-        return this;
-    }
-
-    readPackedBufferDirect(encoding)
-    {
-        const len = this.readVarUIntDirect();
-        return this.readBufferDirect(len);
-    }
-
-    writePackedBufferDirect(value)
-    {
-        this.writeVarUInt(value.length);
-        this._pos += value.copy(this._buf, this._pos);
-        this._len = this._pos;
         return this;
     }
 
@@ -764,14 +581,12 @@ class BufferPlus
             const newSize = Math.max(origSize * 2, requireSize);
             this._buf = Buffer.allocUnsafe(newSize);
             origBuf.copy(this._buf, 0, 0, origSize);
-            debug(`buffer re-allocate from ${origSize} to ${newSize}`);
         }
 
         // copy data into appropriate location if insertOffset is provided.
         if (typeof insertOffset === 'number')
         {
             // copy buffer from (insertOffset, bufLength) -> (insertOffset + dataSize, bufLength + dataSize)
-            //debug(`copy buffer from (${insertOffset}: ${this._buf.length}) to (${insertOffset + dataSize}: ${this._buf.length + dataSize})`)
             this._buf.copy(this._buf, insertOffset + dataSize, insertOffset, this._buf.length);
         }
 
@@ -879,8 +694,6 @@ BufferPlus._getDataTypeByteLength = function(value, dataType, encoding)
     const funcMap = BufferPlus._getTypeFuncMap(dataType);
     if (funcMap === undefined)
         return 0;
-
-    //debug(dataType + ' funcMap.size:\n', funcMap.size.toString());
 
     if (dataType.toLowerCase() === 'string')
         return funcMap.size(value, encoding);
