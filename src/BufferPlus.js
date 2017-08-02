@@ -278,42 +278,6 @@ class BufferPlus
         return this;
     }
 
-    byteLengthArray(items, type)
-    {
-        if (!Array.isArray(items))
-            throw new TypeError('items must be a valid Array');
-
-        if (items.length < 1)
-            return 0;
-
-        const funcMap = BufferPlus._getTypeFuncMap(type);
-        if (funcMap === undefined)
-            throw new TypeError('Unknown type of built-in or custom types');
-
-        const sizeFunc = funcMap.size;
-        let bytes = VarInt.byteLengthUInt(items.length);
-        for (let i = 0; i < items.length; i++)
-        {
-            if (typeof sizeFunc === 'number')
-                bytes += sizeFunc;
-            else
-                bytes += sizeFunc(items[i]);
-        }
-
-        return bytes;
-    }
-
-    byteLengthSchema(name, obj)
-    {
-        const schema = BufferPlus.getSchema(name);
-        if (!schema)
-            throw new Error('Schema "' + name + '" does not exist');
-
-        schema.buildOnce();
-
-        return schema.byteLength(obj);
-    }
-
     // Signed Integers
     readInt8() { return this._readNumber(Buffer.prototype.readInt8, 1); }
     readInt16BE() { return this._readNumber(Buffer.prototype.readInt16BE, 2); }
@@ -476,12 +440,6 @@ class BufferPlus
         return this;
     }
 
-    byteLengthPackedString(value, encoding)
-    {
-        const valueSize = Buffer.byteLength(value, encoding);
-        return VarInt.byteLengthUInt(valueSize) + valueSize;
-    }
-
     readPackedBuffer(encoding)
     {
         const len = this.readVarUInt();
@@ -508,21 +466,6 @@ class BufferPlus
             this.writeBuffer(value);
         }
         return this;
-    }
-
-    byteLengthPackedBuffer(value)
-    {
-        return VarInt.byteLengthUInt(value.length) + value.length;
-    }
-
-    byteLengthVarInt(value)
-    {
-        return VarInt.byteLengthInt(value);
-    }
-
-    byteLengthVarUInt(value)
-    {
-        return VarInt.byteLengthUInt(value);
     }
 
     readSchema(name)
@@ -722,6 +665,16 @@ BufferPlus._getTypeFuncMap = function(type)
     return undefined;
 };
 
+BufferPlus.byteLengthPackedString = function(value, encoding)
+{
+    const valueSize = Buffer.byteLength(value, encoding);
+    return VarInt.byteLengthUInt(valueSize) + valueSize;
+};
+
+BufferPlus.byteLengthPackedBuffer = function(value)
+{
+    return VarInt.byteLengthUInt(value.length) + value.length;
+};
 
 function _readArrayFromBuffer(buffer, funcMap)
 {
@@ -792,12 +745,12 @@ const BUILTIN_TYPE_MAP = {
 
     // string
     'string': {
-        size: protos.byteLengthPackedString,
+        size: BufferPlus.byteLengthPackedString,
         read: protos.readPackedString,
         write: protos.writePackedString
     },
     'buffer': {
-        size: protos.byteLengthPackedBuffer,
+        size: BufferPlus.byteLengthPackedBuffer,
         read: protos.readPackedBuffer,
         write: protos.writePackedBuffer
     },

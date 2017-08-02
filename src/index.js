@@ -14,9 +14,6 @@ exports.isBufferPlus = function(obj)
     return obj instanceof BufferPlus;
 };
 
-exports.byteLengthVarInt = VarInt.byteLengthInt;
-exports.byteLengthVarUInt = VarInt.byteLengthUInt;
-
 // Buffer.isEncoding(encoding)
 exports.isEncoding = Buffer.isEncoding;
 
@@ -50,9 +47,6 @@ exports.allocUnsafeSlow = function(size)
     bp.reset();
     return bp;
 };
-
-// Buffer.byteLength(string[, encoding])
-exports.byteLength = Buffer.byteLength;
 
 // Buffer.compare(buf1, buf2)
 exports.compare = function(buf1, buf2)
@@ -154,17 +148,16 @@ exports.addCustomType = function(name, readFunction, writeFunction, sizeFunction
         return this;
     };
 
-    BufferPlus.prototype['byteLength' + name] = function (value) {
-        return sizeFunction.call(null, this, value);
-    };
 
     BufferPlus._registerCustomType(
         name,
         BufferPlus.prototype['read' + name],
         BufferPlus.prototype['write' + name],
-        BufferPlus.prototype['byteLength' + name]
+        sizeFunction
     );
 
+    // register byteLength<name> method as module scope
+    exports['byteLength' + name] = sizeFunction;
 };
 
 
@@ -176,3 +169,59 @@ exports.createSchema = function(name)
 };
 
 exports.getSchema = BufferPlus.getSchema;
+
+
+/*** byteLength methods ***/
+// Buffer.byteLength(string[, encoding])
+exports.byteLength = Buffer.byteLength;
+exports.byteLengthVarInt = VarInt.byteLengthInt;
+exports.byteLengthVarUInt = VarInt.byteLengthUInt;
+exports.byteLengthArray = function(items, type)
+{
+    if (!Array.isArray(items))
+        throw new TypeError('items must be a valid Array');
+
+    if (items.length < 1)
+        return 0;
+
+    const funcMap = BufferPlus._getTypeFuncMap(type);
+    if (funcMap === undefined)
+        throw new TypeError('Unknown type of built-in or custom types');
+
+    const sizeFunc = funcMap.size;
+    let bytes = VarInt.byteLengthUInt(items.length);
+    for (let i = 0; i < items.length; i++)
+    {
+        if (typeof sizeFunc === 'number')
+            bytes += sizeFunc;
+        else
+            bytes += sizeFunc(items[i]);
+    }
+
+    return bytes;
+};
+
+exports.byteLengthPackedString = BufferPlus.byteLengthPackedString;
+
+exports.byteLengthPackedBuffer = BufferPlus.byteLengthPackedBuffer;
+
+exports.byteLengthVarInt = function(value)
+{
+    return VarInt.byteLengthInt(value);
+};
+
+exports.byteLengthVarUInt = function(value)
+{
+    return VarInt.byteLengthUInt(value);
+};
+
+exports.byteLengthSchema = function(name, obj)
+{
+    const schema = BufferPlus.getSchema(name);
+    if (!schema)
+        throw new Error('Schema "' + name + '" does not exist');
+
+    schema.buildOnce();
+
+    return schema.byteLength(obj);
+};
