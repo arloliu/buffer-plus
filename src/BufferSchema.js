@@ -219,12 +219,6 @@ class BufferSchema
         return refVal;
     }
 
-    // proxy method
-    _getDataTypeByteLength(value, dataType, encoding)
-    {
-        return BufferPlus._getDataTypeByteLength(value, dataType, encoding);
-    }
-
     _compactFuncStr(array)
     {
         const trimArray = array.map((item) => {
@@ -440,7 +434,7 @@ function readString(buffer, strEnc)
 
 function writeString(buffer, value, encoding)
 {
-    var len = Buffer.byteLength(value);
+    var len = Buffer.byteLength(value, encoding);
     writeVarUInt(buffer, len);
     buffer.write(value, helper.offset, len, encoding);
     helper.offset += len;
@@ -490,7 +484,7 @@ const helper = {
 
     byteLengthString: function(value, encoding)
     {
-        var len = Buffer.byteLength(value);
+        var len = Buffer.byteLength(value, encoding);
         return VarInt.byteLengthUInt(len) + len;
     },
 
