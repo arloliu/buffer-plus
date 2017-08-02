@@ -114,6 +114,8 @@ exports.from = function()
     return new BufferPlus(buf);
 };
 
+/*** Custom type methods ***/
+exports.hasCustomType = BufferPlus.hasCustomType;
 
 // addCustomType(name, readFunction, writeFunction, sizeFunction)
 exports.addCustomType = function(name, readFunction, writeFunction, sizeFunction)
@@ -160,7 +162,7 @@ exports.addCustomType = function(name, readFunction, writeFunction, sizeFunction
     exports['byteLength' + name] = sizeFunction;
 };
 
-
+/*** Schema methods ***/
 exports.createSchema = function(name)
 {
     const schema = new BufferSchema(name);
@@ -168,38 +170,20 @@ exports.createSchema = function(name)
     return schema;
 };
 
+exports.hasSchema = BufferPlus.hasSchema;
+
 exports.getSchema = BufferPlus.getSchema;
 
 
 /*** byteLength methods ***/
 // Buffer.byteLength(string[, encoding])
 exports.byteLength = Buffer.byteLength;
+
 exports.byteLengthVarInt = VarInt.byteLengthInt;
+
 exports.byteLengthVarUInt = VarInt.byteLengthUInt;
-exports.byteLengthArray = function(items, type)
-{
-    if (!Array.isArray(items))
-        throw new TypeError('items must be a valid Array');
 
-    if (items.length < 1)
-        return 0;
-
-    const funcMap = BufferPlus._getTypeFuncMap(type);
-    if (funcMap === undefined)
-        throw new TypeError('Unknown type of built-in or custom types');
-
-    const sizeFunc = funcMap.size;
-    let bytes = VarInt.byteLengthUInt(items.length);
-    for (let i = 0; i < items.length; i++)
-    {
-        if (typeof sizeFunc === 'number')
-            bytes += sizeFunc;
-        else
-            bytes += sizeFunc(items[i]);
-    }
-
-    return bytes;
-};
+exports.byteLengthArray = BufferPlus.byteLengthArray;
 
 exports.byteLengthPackedString = BufferPlus.byteLengthPackedString;
 

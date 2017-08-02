@@ -22,6 +22,14 @@ describe('Class methods', function() {
             bp.length.should.equal(1024);
 
             Buffer.compare(buf, bp.toBuffer()).should.equal(0);
+            bp.toBuffer().should.deep.equal(buf);
+            bp.toBuffer().should.not.equal(buf);
+
+            buf.writeUInt32LE(1000);
+            bp.writeUInt32LE(2000);
+
+            bp.moveTo(0);
+            bp.readUInt32LE().should.not.equal(buf.readUInt32LE(0));
         });
 
         it('(Array)', function() {
