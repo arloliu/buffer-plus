@@ -59,11 +59,11 @@ describe('Custom. Schema', function() {
 
         let offset = 0;
         bp.writeSchema('Header', testHeader);
-        offset += bp.byteLengthSchema('Header', testHeader);
+        offset += BufferPlus.byteLengthSchema('Header', testHeader);
         bp.length.should.equal(offset);
 
         bp.writeSchema('Header', testHeader2);
-        offset += bp.byteLengthSchema('Header', testHeader2);
+        offset += BufferPlus.byteLengthSchema('Header', testHeader2);
         bp.length.should.equal(offset);
 
         const decodeBuf = BufferPlus.from(bp);
@@ -75,7 +75,10 @@ describe('Custom. Schema', function() {
         const testStr = 'test string';
         bp.writePackedString(testStr);
         bp.writeSchema('Header', testHeader, 0);
-        bp.length.should.equal(bp.byteLengthPackedString(testStr) + BufferPlus.getSchema('Header').byteLength(testHeader));
+        bp.length.should.equal(
+            BufferPlus.byteLengthPackedString(testStr)
+            + BufferPlus.getSchema('Header').byteLength(testHeader)
+        );
 
 
         const decodeBuf = BufferPlus.from(bp);

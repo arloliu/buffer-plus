@@ -18,7 +18,7 @@ describe('Custom. Type', function() {
                 buffer.writeVarUInt(value.length);
                 buffer.writeString(value);
             },
-            (buffer, value) => {
+            (value) => {
                 return BufferPlus.byteLengthVarUInt(value.length)
                     + BufferPlus.byteLength(value);
             }
@@ -37,10 +37,10 @@ describe('Custom. Type', function() {
                 buffer.writeHeaderString(value.message);
                 buffer.writeArray(value.items, 'uint32le');
             },
-            (buffer, value) => {
+            (value) => {
                 return 1
-                    + buffer.byteLengthHeaderString(value.message)
-                    + buffer.byteLengthArray(value.items, 'uint32le');
+                    + BufferPlus.byteLengthHeaderString(value.message)
+                    + BufferPlus.byteLengthArray(value.items, 'uint32le');
             }
         );
     });
@@ -48,7 +48,7 @@ describe('Custom. Type', function() {
 
     it('#byteLength', function() {
         const testStr = 'header string';
-        const testStrSize = bp.byteLengthHeaderString(testStr);
+        const testStrSize = BufferPlus.byteLengthHeaderString(testStr);
         bp.writeHeaderString(testStr);
         bp.position.should.equal(testStrSize);
     });
@@ -57,7 +57,7 @@ describe('Custom. Type', function() {
 
         const testStr = 'header string';
         const testStr2 = 'header string2';
-        const testStrSize = bp.byteLengthHeaderString(testStr);
+        const testStrSize = BufferPlus.byteLengthHeaderString(testStr);
         bp.writeUInt32LE(testStrSize);
         bp.writeHeaderString(testStr);
         bp.writeHeaderString(testStr2);
@@ -76,7 +76,7 @@ describe('Custom. Type', function() {
         };
         bp.writeHeader(header);
 
-        bp.length.should.equal(bp.byteLengthHeader(header));
+        bp.length.should.equal(BufferPlus.byteLengthHeader(header));
 
         bp.moveTo(0);
 

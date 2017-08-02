@@ -302,7 +302,7 @@ describe('Read/Write', function() {
             bp.moveTo(0);
             testValues.forEach((value) => {
                 bp.readVarInt().should.equal(value);
-                byteCount += bp.byteLengthVarInt(value);
+                byteCount += BufferPlus.byteLengthVarInt(value);
                 bp.position.should.equal(byteCount);
             });
         });
@@ -324,7 +324,7 @@ describe('Read/Write', function() {
             bp.moveTo(10);
             testValues.reverse().forEach((value) => {
                 bp.readVarInt().should.equal(value);
-                byteCount += bp.byteLengthVarInt(value);
+                byteCount += BufferPlus.byteLengthVarInt(value);
                 bp.position.should.equal(byteCount);
             });
         });
@@ -350,7 +350,7 @@ describe('Read/Write', function() {
             bp.moveTo(0);
             testValues.forEach((value) => {
                 bp.readVarInt().should.equal(value);
-                byteCount += bp.byteLengthVarInt(value);
+                byteCount += BufferPlus.byteLengthVarInt(value);
                 bp.position.should.equal(byteCount);
             });
         });
@@ -374,7 +374,7 @@ describe('Read/Write', function() {
             bp.moveTo(10);
             testValues.reverse().forEach((value) => {
                 bp.readVarInt().should.equal(value);
-                byteCount += bp.byteLengthVarInt(value);
+                byteCount += BufferPlus.byteLengthVarInt(value);
                 bp.position.should.equal(byteCount);
             });
         });
