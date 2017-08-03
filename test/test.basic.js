@@ -2,22 +2,86 @@ require('chai').should();
 const BufferPlus = require('../lib/index.js');
 
 describe('Class methods', function() {
+    it('#create', function() {
+        const bp = BufferPlus.create();
+        bp.length.should.equal(0);
+        bp.position.should.equal(0);
+        bp.size.should.not.equal(0);
+
+        const testStr = 'test string';
+        const rawBuf = Buffer.alloc(Buffer.byteLength(testStr));
+
+        const bp2 = BufferPlus.create(rawBuf);
+        bp2.writeString(testStr, 'utf8');
+
+        rawBuf.toString('utf8', 0, Buffer.byteLength(testStr)).should.equal(testStr);
+
+        const bp3 = BufferPlus.create(1024);
+        bp3.size.should.equal(1024);
+
+        (function() {
+            BufferPlus.create('string');
+        }).should.throw(TypeError);
+
+        (function() {
+            BufferPlus.create(-1);
+        }).should.throw(RangeError);
+
+    });
+
     it('#alloc', function() {
         let bp = BufferPlus.alloc(1024, 0);
         bp.size.should.equal(1024);
         bp.length.should.equal(0);
+        bp.position.should.equal(0);
     });
 
     it('#allocUnsafe', function () {
         let bp = BufferPlus.allocUnsafe(1024);
         bp.size.should.equal(1024);
         bp.length.should.equal(0);
+        bp.position.should.equal(0);
+    });
+
+    it('#allocUnsafeSlow', function () {
+        let bp = BufferPlus.allocUnsafeSlow(1024);
+        bp.size.should.equal(1024);
+        bp.length.should.equal(0);
+        bp.position.should.equal(0);
     });
 
     describe('#from', function() {
         it('(Buffer)', function() {
             const buf = Buffer.allocUnsafe(1024);
             const bp = BufferPlus.from(buf);
+            bp.size.should.equal(1024);
+            bp.length.should.equal(1024);
+
+            Buffer.compare(buf, bp.toBuffer()).should.equal(0);
+            bp.toBuffer().should.deep.equal(buf);
+            bp._buf.should.equal(buf);
+
+            buf.writeUInt32LE(1000);
+            bp.writeUInt32LE(2000);
+
+            bp.moveTo(0);
+            bp.readUInt32LE().should.equal(buf.readUInt32LE(0));
+        });
+
+        it('(Array)', function() {
+            const array = [1, 2, 3, 4];
+            const bp = BufferPlus.from(array);
+            bp.size.should.equal(4);
+            bp.length.should.equal(4);
+
+            toArray(bp.toBuffer().values()).should.have.ordered.members(array);
+        });
+    });
+
+    describe('#clone', function() {
+        it('(Buffer)', function() {
+            const buf = Buffer.allocUnsafe(1024);
+            const bp = BufferPlus.clone(buf);
             bp.size.should.equal(1024);
             bp.length.should.equal(1024);
 

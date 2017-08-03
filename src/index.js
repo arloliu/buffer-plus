@@ -33,10 +33,7 @@ exports.alloc = function()
 // Buffer.allocUnsafe(size)
 exports.allocUnsafe = function(size)
 {
-    const buf = Buffer.allocUnsafe(size);
-    const bp = new BufferPlus(buf);
-    bp.reset();
-    return bp;
+    return new BufferPlus(size);
 };
 
 // Buffer.allocUnsafeSlow(size)
@@ -102,15 +99,50 @@ exports.concat = function(list, length)
     return new BufferPlus(buf);
 };
 
+// create([size])
+// create(buffer)
+exports.create = function(arg)
+{
+
+    if (typeof arg === 'number' || arg instanceof Buffer || arg instanceof BufferPlus)
+        return new BufferPlus(arg);
+    else if (arg === undefined)
+        return new BufferPlus(64);
+    else
+        throw TypeError('argument should be Buffer, BufferPlus or number of size');
+};
 
 // Buffer.from(...)
-exports.from = function()
+exports.from = function(value, encodingOrOffset, length)
 {
     let buf;
-    if (arguments.length === 1 && arguments[0] instanceof BufferPlus)
-        buf = arguments[0];
+    if (value instanceof BufferPlus || value instanceof Buffer)
+        buf = value;
     else
         buf = Buffer.from.apply(null, arguments);
+
+    return new BufferPlus(buf);
+};
+
+exports.clone = function(value, encodingOrOffset, length)
+{
+    let buf;
+    if (value instanceof BufferPlus)
+    {
+        buf = Buffer.allocUnsafe(value.length);
+        value.toBuffer().copy(buf, 0, 0, value.length);
+    }
+    else if (value instanceof ArrayBuffer || ArrayBuffer.isView(value))
+    {
+        const tempBuf = Buffer.from(value, encodingOrOffset, length);
+        buf = Buffer.allocUnsafe(tempBuf.length);
+        tempBuf.copy(buf, 0, 0, tempBuf.length);
+    }
+    else
+    {
+        buf = Buffer.from.apply(null, arguments);
+    }
+
     return new BufferPlus(buf);
 };
 
@@ -120,9 +152,9 @@ exports.hasCustomType = BufferPlus.hasCustomType;
 // addCustomType(name, readFunction, writeFunction, sizeFunction)
 exports.addCustomType = function(name, readFunction, writeFunction, sizeFunction)
 {
-    const validNameRegexp = /^[a-z0-9]+$/i;
+    const validNameRegexp = /^[$a-z_][0-9a-z_$]*$/i;
     if (typeof name !== 'string' || !validNameRegexp.test(name))
-        throw new TypeError('name must be a valid string which contains only alphanumeric characters');
+        throw new TypeError('name must be a valid function name');
 
     if (typeof readFunction !== 'function'
         || typeof writeFunction !== 'function'

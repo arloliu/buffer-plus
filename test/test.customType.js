@@ -68,6 +68,28 @@ describe('Custom. Type', function() {
         bp.readHeaderString().should.equal(testStr2);
     });
 
+    it('#addCustomType', function() {
+        (function() {
+            BufferPlus.addCustomType('-invalidname', function() {}, function() {}, function() {});
+        }).should.throw(TypeError);
+
+        (function() {
+            BufferPlus.addCustomType('invalid!name', function() {}, function() {}, function() {});
+        }).should.throw(TypeError);
+
+        (function() {
+            BufferPlus.addCustomType('invalid-Name', function() {}, function() {}, function() {});
+        }).should.throw(TypeError);
+
+        (function() {
+            BufferPlus.addCustomType('validName__', function() {}, function() {}, function() {});
+        }).should.not.throw(TypeError);
+
+        (function() {
+            BufferPlus.addCustomType('$valid_name', function() {}, function() {}, function() {});
+        }).should.not.throw(TypeError);
+    });
+
     it('#compound', function() {
         let header = {
             type: 0x8,
