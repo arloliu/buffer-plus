@@ -82,6 +82,11 @@ class BufferPlus
         return this._pos;
     }
 
+    get remaining()
+    {
+        return (this._len - this._pos);
+    }
+
     reset()
     {
         this._pos = 0;
@@ -96,11 +101,6 @@ class BufferPlus
             throw new RangeError('Invalid position. position must be a valid integer between 0 to length - 1');
         }
         this._len = this._pos;
-    }
-
-    remaining()
-    {
-        return (this._len - this._pos);
     }
 
     toBuffer()
@@ -183,14 +183,22 @@ class BufferPlus
         return this;
     }
 
-    // readString(length[, encoding])
-    readString(length, encoding)
+    // readString([length][, encoding])
+    readString(a1, a2)
     {
-        const len = (typeof length === 'number') ? length : this._len;
-        const end = Math.min(this._len, this._pos + len);
-        const encodingVal = (typeof encoding === 'string') ? encoding : this._defaultEncoding;
+        let length = this._len - this._pos;
+        let encoding =  this._defaultEncoding;
+        if (typeof a1 === 'number')
+            length = a1;
+        else if (typeof a1 === 'string')
+            encoding = a1;
+        else if (typeof a2 === 'string')
+            encoding = a2;
 
-        const value = this._buf.toString(encodingVal, this._pos, end);
+
+        const end = Math.min(this._len, this._pos + length);
+
+        const value = this._buf.toString(encoding, this._pos, end);
         this._pos = end;
         return value;
     }

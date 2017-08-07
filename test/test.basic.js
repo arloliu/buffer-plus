@@ -185,12 +185,12 @@ describe('Basic', function() {
         bp.should.have.lengthOf(16);
         bp.writeUInt32LE(0xffff);
         bp.position.should.equal(4);
-        bp.remaining().should.equal(16 - 4);
+        bp.remaining.should.equal(16 - 4);
 
         bp.writeUInt32LE(0xffff, 0);
         bp.should.have.lengthOf(20);
         bp.position.should.equal(8);
-        bp.remaining().should.equal(16 - 4);
+        bp.remaining.should.equal(16 - 4);
     });
 
     it('#toString', function() {
