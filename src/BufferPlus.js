@@ -449,7 +449,7 @@ class BufferPlus
         return this;
     }
 
-    readPackedBuffer(encoding)
+    readPackedBuffer()
     {
         const len = this.readVarUInt();
         return this.readBuffer(len);
