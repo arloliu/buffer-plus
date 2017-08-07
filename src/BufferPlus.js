@@ -124,8 +124,8 @@ class BufferPlus
     {
         if (!Number.isSafeInteger(position))
             throw new TypeError('position must be a valid integer number');
-        if (position < 0 || (position > 0 && position >= this._len))
-            throw new RangeError('position must be between 0 to length - 1');
+        if (position < 0 || (position > 0 && position > this._len))
+            throw new RangeError('position must be between 0 to length');
         this._pos = position;
     }
 
@@ -135,8 +135,8 @@ class BufferPlus
             throw new TypeError('position must be a valid integer number');
 
         const position = this._pos + offset;
-        if (position < 0 || position >= this._len)
-            throw new RangeError('skip position must be between 0 to length - 1');
+        if (position < 0 || position > this._len)
+            throw new RangeError('skip position must be between 0 to length');
 
         this._pos = position;
     }
@@ -147,8 +147,8 @@ class BufferPlus
             throw new TypeError('position must be a valid integer number');
 
         const position = this._pos - offset;
-        if (position < 0 || position >= this._len)
-            throw new RangeError('skip position must be between 0 to length - 1');
+        if (position < 0 || position > this._len)
+            throw new RangeError('skip position must be between 0 to length');
 
         this._pos = position;
     }
