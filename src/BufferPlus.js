@@ -156,7 +156,7 @@ class BufferPlus
 
     readBuffer(length)
     {
-        const len = (typeof length === 'number') ? length : this._len;
+        const len = (typeof length === 'number') ? length : this._len - this._pos;
         const end = Math.min(this._len, this._pos + len);
 
         const value = this._buf.slice(this._pos, end);
