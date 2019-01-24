@@ -1,5 +1,4 @@
 'use strict';
-var MSB_BYTES = ~(0x7F);
 
 // Encode
 function encodeUInt(value, output)

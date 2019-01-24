@@ -8,8 +8,9 @@ const UInt64LE = require('int64-buffer').Uint64LE;
 const VarInt = require('./VarInt.js');
 
 // eslint-disable-next-line no-unused-vars
-const nodeUtil = require('util');
-const debug = (nodeUtil && nodeUtil.debuglog) ? nodeUtil.debuglog('bp') : function() {};
+// const nodeUtil = require('util');
+// eslint-disable-next-line no-unused-vars
+// const debug = (nodeUtil && nodeUtil.debuglog) ? nodeUtil.debuglog('bp') : function() {};
 
 class BufferPlus
 {

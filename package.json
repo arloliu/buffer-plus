@@ -23,22 +23,27 @@
   "homepage": "https://github.com/arloliu/buffer-plus",
   "scripts": {
     "test": "mocha",
-    "build": "babel --no-comments -d lib src",
+    "build": "npm run build:node; npm run build:web",
+    "build:node": "babel --no-comments -d lib src",
+    "build:web": "webpack --mode=production",
+    "eslint": "eslint src",
     "watch": "babel --watch --no-comments -d lib src"
   },
   "devDependencies": {
-    "babel-cli": "^6.24.1",
-    "babel-core": "^6.25.0",
+    "@babel/core": "^7.2.2",
+    "@babel/preset-env": "^7.3.1",
     "babel-eslint": "^7.2.3",
-    "babel-loader": "^7.1.1",
-    "babel-preset-env": "^1.6.0",
+    "babel-loader": "^8.0.5",
     "benchmark": "^2.1.4",
     "chai": "^4.1.0",
     "eslint": "^4.3.0",
     "mocha": "^3.4.2",
-    "schemapack": "^1.4.2"
+    "schemapack": "^1.4.2",
+    "webpack": "^4.29.0",
+    "webpack-cli": "^3.2.1"
   },
   "dependencies": {
+    "@babel/cli": "^7.2.3",
     "int64-buffer": "^0.1.9"
   }
 }

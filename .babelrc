@@ -1,10 +1,10 @@
 {
   "presets": [
-    ["env", {
+    ["@babel/preset-env", {
         "targets": {
             "node": "5.0.0",
         },
-        "include": ["transform-es2015-template-literals", "transform-es2015-block-scoping"]
+        "include": ["@babel/plugin-transform-template-literals", "@babel/plugin-transform-block-scoping"]
     }]
   ]
 }
