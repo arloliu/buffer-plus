@@ -87,6 +87,18 @@ class BufferPlus
         return (this._len - this._pos);
     }
 
+    get encoding()
+    {
+        return this._defaultEncoding;
+    }
+
+    setEncoding(encoding)
+    {
+        if (!Buffer.isEncoding(encoding))
+            throw new TypeError('encoding must be a valid string encoding');
+        this._defaultEncoding = encoding;
+    }
+
     reset()
     {
         this._pos = 0;
