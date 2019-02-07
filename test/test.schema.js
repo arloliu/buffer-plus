@@ -39,6 +39,172 @@ const testHeader2 = {
     ],
 };
 
+const testComplexObject = {
+    headerLen: 2000,
+    name: 'test header',
+    type: 0x8,
+    serial: 0x123456781234567,
+    source: {type: 'client', ip: '127.0.0.1'},
+    customString: 'this is a custom string 1',
+    customObject: {
+        type: 0x3,
+        message: 'test message 1',
+        items: [0xfffffff1, 0xfffffff2, 0xfffffff3, 0xfffffff4],
+    },
+    customArray: [
+        {
+            type: 0x4,
+            message: 'test message 2',
+            items: [0xfffffff1, 0xfffffff2, 0xfffffff3, 0xfffffff4, 0xfffffff5],
+        },
+        {
+            type: 0x5,
+            message: 'test message 3',
+            items: [0xfffffff1, 0xfffffff2, 0xfffffff3, 0xfffffff4],
+        },
+    ],
+    customNestObject: {
+        nest1: {
+            type: 0x4,
+            message: 'test message 2',
+            items: [0xfffffff1, 0xfffffff2, 0xfffffff3, 0xfffffff4],
+        },
+        nest2: {
+            type: 0x5,
+            message: 'test message 3',
+            items: [0xfffffff1, 0xfffffff2, 0xfffffff3, 0xfffffff4],
+        },
+    },
+    locations: ['tw', 'us', 'jp'],
+    languages: [['aa', 'bb', 'cc'], ['dd', 'ee'], ['ff', 'gg']],
+    labels: [
+        [['t11', 't12'], ['t13', 't14']],
+        [['t21', 't22'], ['t23', 't24']],
+        [['t31', 't32'], ['t33', 't34']],
+    ],
+    data: [
+        {group: 'group1', name: '中文測試1', count: 5000},
+        {group: 'group2', name: '中文測試2', count: 5001},
+        {group: 'group3', name: '中文測試3', count: 0x123456789},
+    ],
+    info: {
+        group: ['a1', 'a2'],
+        memo: {
+            name: 'test1',
+            address: 'test2',
+        },
+    },
+};
+
+
+const complextObjectSchema = {
+    type: 'object',
+    properties: {
+        headerLen: {type: 'varuint'},
+        name: {type: 'string'},
+        type: {type: 'uint8'},
+        serial: {type: 'uint64le'},
+        source: {
+            type: 'object',
+            properties: {
+                type: {type: 'string'},
+                ip: {type: 'string'},
+            },
+            order: ['type', 'ip'],
+        },
+        customString: {
+            type: 'custom',
+            name: 'CustomString',
+        },
+        customObject: {
+            type: 'custom',
+            name: 'CustomObject',
+        },
+        customArray: {
+            type: 'array',
+            items: {
+                type: 'custom',
+                name: 'CustomObject',
+            },
+        },
+        customNestObject: {
+            type: 'object',
+            properties: {
+                nest1: {type: 'custom', name: 'CustomObject'},
+                nest2: {type: 'custom', name: 'CustomObject'},
+            },
+            order: ['nest1', 'nest2'],
+        },
+        locations: {
+            type: 'array',
+            items: {type: 'string'},
+        },
+        languages: {
+            type: 'array',
+            items: {
+                type: 'array',
+                items: {type: 'string'},
+            },
+        },
+        labels: {
+            type: 'array',
+            items: {
+                type: 'array',
+                items: {
+                    type: 'array',
+                    items: {type: 'string'},
+                },
+            },
+        },
+        data: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    group: {type: 'string'},
+                    name: {type: 'string'},
+                    count: {type: 'varint'},
+                },
+                order: ['name', 'count', 'group'],
+            },
+        },
+        info: {
+            type: 'object',
+            properties: {
+                group: {
+                    type: 'array',
+                    items: {type: 'string'},
+                },
+                memo: {
+                    type: 'object',
+                    properties: {
+                        name: {type: 'string'},
+                        address: {type: 'string'},
+                    },
+                    order: ['name', 'address'],
+                },
+            },
+            order: ['group', 'memo'],
+        },
+    },
+    order: [
+        'headerLen',
+        'name',
+        'type',
+        'serial',
+        'source',
+        'customString',
+        'customObject',
+        'customArray',
+        'customNestObject',
+        'locations',
+        'languages',
+        'labels',
+        'data',
+        'info',
+    ],
+};
+
 describe('Custom. Schema', () => {
     const bp = BufferPlus.allocUnsafe(1024);
 
@@ -78,6 +244,7 @@ describe('Custom. Schema', () => {
                 }
         );
 
+        BufferPlus.createSchema('ComplexObject', complextObjectSchema);
 
         const locationSchema = BufferPlus.createSchema('Location');
         locationSchema.addField('type', 'string');
@@ -106,6 +273,7 @@ describe('Custom. Schema', () => {
 
     it('#Header(auto)', () => {
         let offset = 0;
+
         bp.writeSchema('Header', testHeader);
         offset += BufferPlus.byteLengthSchema('Header', testHeader);
         bp.length.should.equal(offset);
@@ -114,24 +282,33 @@ describe('Custom. Schema', () => {
         offset += BufferPlus.byteLengthSchema('Header', testHeader2);
         bp.length.should.equal(offset);
 
+        bp.writeSchema('ComplexObject', testComplexObject);
+        offset += BufferPlus.byteLengthSchema('ComplexObject', testComplexObject);
+        bp.length.should.equal(offset);
+
         const decodeBuf = BufferPlus.from(bp);
         decodeBuf.readSchema('Header').should.deep.equal(testHeader);
         decodeBuf.readSchema('Header').should.deep.equal(testHeader2);
+        decodeBuf.readSchema('ComplexObject').should.deep.equal(testComplexObject);
     });
 
     it('#Header(insert)', () => {
         const testStr = 'test string';
         bp.writePackedString(testStr);
         bp.writeSchema('Header', testHeader, 0);
+        bp.writeSchema('ComplexObject', testComplexObject, 0);
         bp.length.should.equal(
             BufferPlus.byteLengthPackedString(testStr)
             + BufferPlus.getSchema('Header').byteLength(testHeader)
+            + BufferPlus.getSchema('ComplexObject').byteLength(testComplexObject)
         );
 
 
         const decodeBuf = BufferPlus.from(bp);
-        const result = decodeBuf.readSchema('Header');
-        result.should.deep.equal(testHeader);
+        const result1 = decodeBuf.readSchema('ComplexObject');
+        const result2 = decodeBuf.readSchema('Header');
+        result1.should.deep.equal(testComplexObject);
+        result2.should.deep.equal(testHeader);
 
         decodeBuf.readPackedString().should.equal(testStr);
     });
