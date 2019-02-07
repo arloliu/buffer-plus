@@ -1,60 +1,59 @@
 require('chai').should();
-const BufferPlus = require('../lib/index.js');
+const BufferPlus = require('../src/index.js');
 
-describe('Custom. Type', function() {
-    var bp = BufferPlus.allocUnsafe(1);
+describe('Custom. Type', () => {
+    const bp = BufferPlus.allocUnsafe(1);
 
-    beforeEach(function() {
+    beforeEach(() => {
         bp.reset();
     });
 
-    before(function() {
+    before(() => {
         BufferPlus.addCustomType('HeaderString',
-            (buffer) => {
-                const len = buffer.readVarUInt();
-                return buffer.readString(len);
-            },
-            (buffer, value) => {
-                buffer.writeVarUInt(value.length);
-                buffer.writeString(value);
-            },
-            (value) => {
-                return BufferPlus.byteLengthVarUInt(value.length)
-                    + BufferPlus.byteLength(value);
-            }
+                (buffer) => {
+                    const len = buffer.readVarUInt();
+                    return buffer.readString(len);
+                },
+                (buffer, value) => {
+                    buffer.writeVarUInt(value.length);
+                    buffer.writeString(value);
+                },
+                (value) => {
+                    return BufferPlus.byteLengthVarUInt(value.length)
+                        + BufferPlus.byteLength(value);
+                }
         );
 
         BufferPlus.addCustomType('Header',
-            (buffer) => {
-                let obj = {};
-                obj.type = buffer.readUInt8();
-                obj.message = buffer.readHeaderString();
-                obj.items = buffer.readArray('uint32le');
-                return obj;
-            },
-            (buffer, value) => {
-                buffer.writeUInt8(value.type);
-                buffer.writeHeaderString(value.message);
-                buffer.writeArray(value.items, 'uint32le');
-            },
-            (value) => {
-                return 1
-                    + BufferPlus.byteLengthHeaderString(value.message)
-                    + BufferPlus.byteLengthArray(value.items, 'uint32le');
-            }
+                (buffer) => {
+                    const obj = {};
+                    obj.type = buffer.readUInt8();
+                    obj.message = buffer.readHeaderString();
+                    obj.items = buffer.readArray('uint32le');
+                    return obj;
+                },
+                (buffer, value) => {
+                    buffer.writeUInt8(value.type);
+                    buffer.writeHeaderString(value.message);
+                    buffer.writeArray(value.items, 'uint32le');
+                },
+                (value) => {
+                    return 1
+                        + BufferPlus.byteLengthHeaderString(value.message)
+                        + BufferPlus.byteLengthArray(value.items, 'uint32le');
+                }
         );
     });
 
 
-    it('#byteLength', function() {
+    it('#byteLength', () => {
         const testStr = 'header string';
         const testStrSize = BufferPlus.byteLengthHeaderString(testStr);
         bp.writeHeaderString(testStr);
         bp.position.should.equal(testStrSize);
     });
 
-    it('#basic', function() {
-
+    it('#basic', () => {
         const testStr = 'header string';
         const testStr2 = 'header string2';
         const testStrSize = BufferPlus.byteLengthHeaderString(testStr);
@@ -68,33 +67,33 @@ describe('Custom. Type', function() {
         bp.readHeaderString().should.equal(testStr2);
     });
 
-    it('#addCustomType', function() {
-        (function() {
-            BufferPlus.addCustomType('-invalidname', function() {}, function() {}, function() {});
+    it('#addCustomType', () => {
+        (() => {
+            BufferPlus.addCustomType('-invalidname', () => {}, () => {}, () => {});
         }).should.throw(TypeError);
 
-        (function() {
-            BufferPlus.addCustomType('invalid!name', function() {}, function() {}, function() {});
+        (() => {
+            BufferPlus.addCustomType('invalid!name', () => {}, () => {}, () => {});
         }).should.throw(TypeError);
 
-        (function() {
-            BufferPlus.addCustomType('invalid-Name', function() {}, function() {}, function() {});
+        (() => {
+            BufferPlus.addCustomType('invalid-Name', () => {}, () => {}, () => {});
         }).should.throw(TypeError);
 
-        (function() {
-            BufferPlus.addCustomType('validName__', function() {}, function() {}, function() {});
+        (() => {
+            BufferPlus.addCustomType('validName__', () => {}, () => {}, () => {});
         }).should.not.throw(TypeError);
 
-        (function() {
-            BufferPlus.addCustomType('$valid_name', function() {}, function() {}, function() {});
+        (() => {
+            BufferPlus.addCustomType('$valid_name', () => {}, () => {}, () => {});
         }).should.not.throw(TypeError);
     });
 
-    it('#compound', function() {
-        let header = {
+    it('#compound', () => {
+        const header = {
             type: 0x8,
             message: 'test message',
-            items: [0xfffffff1, 0xfffffff2, 0xfffffff3, 0xfffffff4]
+            items: [0xfffffff1, 0xfffffff2, 0xfffffff3, 0xfffffff4],
         };
         bp.writeHeader(header);
 
@@ -105,14 +104,13 @@ describe('Custom. Type', function() {
         bp.readHeader().should.deep.equal(header);
     });
 
-    it('#compound array', function () {
+    it('#compound array', () => {
         const items = [];
-        for (let i = 0; i < 100; i++)
-        {
+        for (let i = 0; i < 100; i++) {
             items.push({
                 type: 0x8,
                 message: 'test message ' + i,
-                items: [0xffffff0 + i, 0xffffff1 + i]
+                items: [0xffffff0 + i, 0xffffff1 + i],
             });
         }
 
@@ -122,7 +120,5 @@ describe('Custom. Type', function() {
         bp.moveTo(0);
         bp.readArray('Header').should.deep.equal(items);
         bp.readArray('Header').should.deep.equal(items);
-
     });
-
 });
