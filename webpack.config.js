@@ -10,6 +10,9 @@ module.exports = {
     output: {
         path: path.resolve('lib'),
         filename: 'bufferplus.min.js',
+        library: 'BufferPlus',
+        libraryTarget: 'umd',
+        umdNamedDefine: true,
     },
     module: {
         rules: [
