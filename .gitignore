@@ -1,5 +1,8 @@
 # temp test
 ex
+examples
+build*.js
+build.sh
 
 # Logs
 logs

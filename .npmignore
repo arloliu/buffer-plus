@@ -2,7 +2,8 @@
 ex
 examples
 benchmark
-
+build.js
+build_closure.js
 # Logs
 logs
 *.log
