@@ -41,7 +41,7 @@ We can read field bytes by bytes in one-phase only the order of fields are fixed
 When we need to exchange data over high latency network, the data size is the key part of performance bottleneck than the decode/encode speed. And the most size-efficiency way to exchange data is with fixed, static data schematic.
 
 # BufferPlus API Reference
-Refer the delicate [BufferPlus API Reference](wiki/API.md)
+Refer the delicate [BufferPlus API Reference](https://github.com/arloliu/buffer-plus/wiki/API.md)
 
 # Examples
 ## Simple Schematic Example
