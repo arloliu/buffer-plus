@@ -490,7 +490,7 @@ class BufferPlus {
     // methods for schema string
     readPackedString(encoding) {
         const len = this.readVarUInt();
-        return this.readString(len, undefined, encoding);
+        return this.readString(len, encoding);
     }
 
     // writePackedString(value [, insertOffset][, encoding])
