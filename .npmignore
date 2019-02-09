@@ -2,7 +2,7 @@
 ex
 examples
 benchmark
-build.js
+build.sh
 build_closure.js
 # Logs
 logs
