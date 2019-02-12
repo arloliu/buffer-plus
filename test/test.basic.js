@@ -196,6 +196,21 @@ describe('Basic', () => {
             })
             .should.throw(RangeError);
         });
+
+        it('force', () => {
+            const bp = BufferPlus.create(64);
+            (() => {
+                bp.moveTo(3);
+            })
+            .should.throw(RangeError);
+
+            (() => {
+                bp.moveTo(3, true);
+            })
+            .should.not.throw(RangeError);
+
+            bp.position.should.equal(3);
+        });
     });
 
     describe('#skip', () => {
@@ -216,6 +231,22 @@ describe('Basic', () => {
                 bp.skip(5);
             })
             .should.throw(RangeError);
+        });
+
+        it('force', () => {
+            const bp = BufferPlus.create(64);
+            bp.moveTo(2, true);
+            (() => {
+                bp.skip(3);
+            })
+            .should.throw(RangeError);
+
+            (() => {
+                bp.skip(3, true);
+            })
+            .should.not.throw(RangeError);
+
+            bp.position.should.equal(5);
         });
     });
 

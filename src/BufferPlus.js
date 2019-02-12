@@ -158,10 +158,15 @@ class BufferPlus {
         return this._buf.slice(this._pos, this._len);
     }
 
-    moveTo(position) {
+    moveTo(position, force) {
         if (!Number.isSafeInteger(position)) {
             throw new TypeError('position must be a valid integer number');
         }
+
+        if (force === true && position > 0) {
+            this._ensureWriteSize(position);
+        }
+
         if (position < 0 || (position > 0 && position > this._len)) {
             throw new RangeError(`position must be between 0 to length, position: ${position}, len: ${this._len}`);
         }
@@ -169,12 +174,17 @@ class BufferPlus {
         return this;
     }
 
-    skip(offset) {
+    skip(offset, force) {
         if (!Number.isSafeInteger(offset)) {
             throw new TypeError('position must be a valid integer number');
         }
 
+        if (force === true) {
+            this._ensureWriteSize(offset);
+        }
+
         const position = this._pos + offset;
+
         if (position < 0 || position > this._len) {
             throw new RangeError('skip position must be between 0 to length');
         }
