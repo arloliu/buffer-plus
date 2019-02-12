@@ -124,11 +124,13 @@ class BufferPlus {
             throw new TypeError('encoding must be a valid string encoding');
         }
         this._defaultEncoding = encoding;
+        return this;
     }
 
     reset() {
         this._pos = 0;
         this._len = 0;
+        return this;
     }
 
     seal(position) {
@@ -137,6 +139,7 @@ class BufferPlus {
             throw new RangeError('Invalid position. position must be a valid integer between 0 to length - 1');
         }
         this._len = this._pos;
+        return this;
     }
 
     toBuffer() {
@@ -163,6 +166,7 @@ class BufferPlus {
             throw new RangeError(`position must be between 0 to length, position: ${position}, len: ${this._len}`);
         }
         this._pos = position;
+        return this;
     }
 
     skip(offset) {
@@ -176,6 +180,7 @@ class BufferPlus {
         }
 
         this._pos = position;
+        return this;
     }
 
     rewind(offset) {
@@ -189,6 +194,7 @@ class BufferPlus {
         }
 
         this._pos = position;
+        return this;
     }
 
     readBuffer(length) {
@@ -683,6 +689,8 @@ class BufferPlus {
         if (offset <= this._pos) {
             this._pos += 8;
         }
+
+        return this;
     }
 }
 

@@ -522,4 +522,31 @@ describe('Read/Write', () => {
             });
         });
     });
+
+    describe('#Chaining', () => {
+        it('position', () => {
+            const bp = BufferPlus.from(Buffer.allocUnsafe(64));
+            bp.moveTo(20).rewind(20).position.should.equal(0);
+            bp.moveTo(20).skip(20).rewind(40).position.should.equal(0);
+        });
+        it('read/write', () => {
+            const bp = BufferPlus.create();
+            bp.writeString('ab')
+                .writeString('cd')
+                .writeString('ef')
+                .moveTo(0)
+                .readString(6)
+                .should.equal('abcdef');
+            bp.reset();
+            bp.writeUInt8(0xFF)
+                .writeUInt16LE(0xFFFF)
+                .writeUInt32LE(0xFFFFFFFF)
+                .writeUInt64LE(Number.MAX_SAFE_INTEGER);
+            bp.moveTo(0);
+            bp.readUInt8().should.equal(0XFF);
+            bp.readUInt16LE().should.equal(0xFFFF);
+            bp.readUInt32LE().should.equal(0xFFFFFFFF);
+            bp.readUInt64LE().should.equal(Number.MAX_SAFE_INTEGER);
+        });
+    });
 });
