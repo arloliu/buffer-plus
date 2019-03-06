@@ -146,6 +146,47 @@ class BufferPlus {
         return this._buf.slice(0, this._len);
     }
 
+    toArrayBuffer() {
+        const b = this._buf.slice(0, this._len);
+        return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+    }
+
+    toDataView(byteOffset, byteLength) {
+        const b = this._buf.slice(0, this._len);
+        const arrayBuffer = b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+        return new DataView(arrayBuffer, byteOffset, byteLength);
+    }
+
+    toInt8Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Int8Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toUint8Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Uint8Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toInt16Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Int16Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toUint16Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Uint16Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toInt32Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Int32Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toUint32Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Uint32Array(b.buffer, b.byteOffset, b.length);
+    }
+
     toString(encoding) {
         const val = (typeof encoding === 'string') ? encoding : this._defaultEncoding;
         if (!Buffer.isEncoding(val)) {
