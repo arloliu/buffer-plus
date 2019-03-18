@@ -35,3 +35,7 @@ node_modules/
 
 # sublime files
 *.sublime-workspace
+
+# nyc
+.nyc_output
+coverage

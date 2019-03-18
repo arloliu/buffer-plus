@@ -21,28 +21,28 @@ const ObjectRequiredFields = ['type', 'properties', 'order'];
 const ArrayRequiredFields = ['type', 'items'];
 
 const READ_BUILTIN_TYPES = {
-    'boolean': 'buffer.readInt8(helper.offset, true); helper.offset += 1;',
-    'int8': 'buffer.readInt8(helper.offset, true); helper.offset += 1;',
-    'int16be': 'buffer.readInt16BE(helper.offset, true); helper.offset += 2;',
-    'int16le': 'buffer.readInt16LE(helper.offset, true); helper.offset += 2;',
-    'int32be': 'buffer.readInt32BE(helper.offset, true); helper.offset += 4;',
-    'int32le': 'buffer.readInt32LE(helper.offset, true); helper.offset += 4;',
+    'boolean': 'helper.readBoolean(buffer);',
+    'int8': 'buffer.readInt8(helper.offset); helper.offset += 1;',
+    'int16be': 'buffer.readInt16BE(helper.offset); helper.offset += 2;',
+    'int16le': 'buffer.readInt16LE(helper.offset); helper.offset += 2;',
+    'int32be': 'buffer.readInt32BE(helper.offset); helper.offset += 4;',
+    'int32le': 'buffer.readInt32LE(helper.offset); helper.offset += 4;',
     'int64be': 'helper.readInt64BE(buffer);',
     'int64le': 'helper.readInt64LE(buffer);',
 
-    'uint8': 'buffer.readUInt8(helper.offset, true); helper.offset += 1;',
-    'uint16be': 'buffer.readUInt16BE(helper.offset, true); helper.offset += 2;',
-    'uint16le': 'buffer.readUInt16LE(helper.offset, true); helper.offset += 2;',
-    'uint32be': 'buffer.readUInt32BE(helper.offset, true); helper.offset += 4;',
-    'uint32le': 'buffer.readUInt32LE(helper.offset, true); helper.offset += 4;',
+    'uint8': 'buffer.readUInt8(helper.offset); helper.offset += 1;',
+    'uint16be': 'buffer.readUInt16BE(helper.offset); helper.offset += 2;',
+    'uint16le': 'buffer.readUInt16LE(helper.offset); helper.offset += 2;',
+    'uint32be': 'buffer.readUInt32BE(helper.offset); helper.offset += 4;',
+    'uint32le': 'buffer.readUInt32LE(helper.offset); helper.offset += 4;',
     'uint64be': 'helper.readUInt64BE(buffer);',
     'uint64le': 'helper.readUInt64LE(buffer);',
 
-    'floatbe': 'buffer.readFloatBE(helper.offset, true); helper.offset += 4;',
-    'floatle': 'buffer.readFloatLE(helper.offset, true); helper.offset += 4;',
+    'floatbe': 'buffer.readFloatBE(helper.offset); helper.offset += 4;',
+    'floatle': 'buffer.readFloatLE(helper.offset); helper.offset += 4;',
 
-    'doublebe': 'buffer.readDoubleBE(helper.offset, true); helper.offset += 8;',
-    'doublele': 'buffer.readDoubleLE(helper.offset, true); helper.offset += 8;',
+    'doublebe': 'buffer.readDoubleBE(helper.offset); helper.offset += 8;',
+    'doublele': 'buffer.readDoubleLE(helper.offset); helper.offset += 8;',
 
     'varint': 'helper.readVarInt(buffer);',
     'varuint': 'helper.readVarUInt(buffer);',
@@ -72,12 +72,13 @@ function getArrayValStr() {
 }
 
 function _genWriteStr(funcName, valueStr) {
-    return `helper.offset =buffer.write${funcName}(${valueStr}, helper.offset, true);`;
+    return `helper.offset = buffer.write${funcName}(${valueStr}, helper.offset);`;
 }
 
 function getBuiltinWriteString(dataType, valueStr) {
     switch (dataType) {
-        case 'boolean': return _genWriteStr('UInt8', valueStr + ' ? 1 : 0');
+        // case 'boolean': return _genWriteStr('Boolean', valueStr + ' ? 1 : 0');
+        case 'boolean': return `helper.writeBoolean(buffer, ${valueStr} ? 1 : 0);`;
         case 'int8': return _genWriteStr('Int8', valueStr);
         case 'int16be': return _genWriteStr('Int16BE', valueStr);
         case 'int16le': return _genWriteStr('Int16LE', valueStr);
@@ -590,6 +591,17 @@ class BufferSchema {
     }
 } // class BufferSchema
 
+// helper read/write Boolean
+
+function readBoolean(buffer) {
+    const value = buffer.readUInt8(helper.offset);
+    helper.offset += 1;
+    return value ? true : false;
+}
+
+function writeBoolean(buffer, value) {
+    helper.offset = buffer.writeUInt8(value ? 1 : 0, helper.offset);
+}
 
 // helper read/write Int64
 function readInt64BE(buffer) {
@@ -717,6 +729,9 @@ function writeBuffer(buffer, value) {
 helper = {
     offset: 0,
     getDataTypeByteLength: BufferPlus._getDataTypeByteLength,
+
+    readBoolean: readBoolean,
+    writeBoolean: writeBoolean,
 
     readInt64BE: readInt64BE,
     readInt64LE: readInt64LE,
