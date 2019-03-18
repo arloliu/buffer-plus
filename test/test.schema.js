@@ -5,6 +5,7 @@ const testHeader = {
     headerLen: 2000,
     name: 'test header',
     type: 0x8,
+    isAdmin: false,
     serial: 0x123456781234567,
     source: {type: 'client', ip: '127.0.0.1'},
     customString: 'this is a custom string 1',
@@ -24,6 +25,7 @@ const testHeader2 = {
     headerLen: 3000,
     name: 'test header2',
     type: 0x8,
+    isAdmin: true,
     serial: 0xa23b567812345f7,
     source: {type: 'client', ip: '192.168.0.1'},
     customString: 'this is a custom string 2',
@@ -43,6 +45,7 @@ const testComplexObject = {
     headerLen: 2000,
     name: 'test header',
     type: 0x8,
+    isAdmin: true,
     serial: 0x123456781234567,
     source: {type: 'client', ip: '127.0.0.1'},
     customString: 'this is a custom string 1',
@@ -103,6 +106,7 @@ const complextObjectSchema = {
         headerLen: {type: 'varuint'},
         name: {type: 'string'},
         type: {type: 'uint8'},
+        isAdmin: {type: 'boolean'},
         serial: {type: 'uint64le'},
         source: {
             type: 'object',
@@ -191,6 +195,7 @@ const complextObjectSchema = {
         'headerLen',
         'name',
         'type',
+        'isAdmin',
         'serial',
         'source',
         'customString',
@@ -260,6 +265,7 @@ describe('Custom. Schema', () => {
         headerSchema.addField('headerLen', 'varuint');
         headerSchema.addField('name', 'string');
         headerSchema.addField('type', 'uint8');
+        headerSchema.addField('isAdmin', 'boolean');
         headerSchema.addField('serial', 'uint64le');
         headerSchema.addField('source', BufferPlus.getSchema('Location'));
         headerSchema.addField('customString', 'CustomString');

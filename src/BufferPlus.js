@@ -373,6 +373,14 @@ class BufferPlus {
         }
         return this;
     }
+    // Boolean
+    readBoolean() {
+        return this._readNumber(Buffer.prototype.readUInt8, 1) ? true : false;
+    }
+
+    writeBoolean(value, insertOffset) {
+        return this._writeNumber(Buffer.prototype.writeUInt8, 1, value ? 1 : 0, insertOffset);
+    }
 
     // Signed Integers
     readInt8() {
@@ -821,6 +829,8 @@ BufferPlus._getTypeFuncMap = _getTypeFuncMap;
 const protos = BufferPlus.prototype;
 // set built-in type map here
 BUILTIN_TYPE_MAP = {
+    // boolean
+    'boolean': {size: 1, read: protos.readBoolean, write: protos.writeBoolean},
     // signed integers
     'int8': {size: 1, read: protos.readInt8, write: protos.writeInt8},
     'int16be': {size: 2, read: protos.readInt16BE, write: protos.writeInt16BE},
