@@ -1,6 +1,6 @@
 {
   "name": "buffer-plus",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Enhanced buffer with offset calculation auto-resize, static schematic and customize type support.",
   "main": "lib/index.js",
   "keywords": [

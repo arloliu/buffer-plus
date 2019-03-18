@@ -124,11 +124,13 @@ class BufferPlus {
             throw new TypeError('encoding must be a valid string encoding');
         }
         this._defaultEncoding = encoding;
+        return this;
     }
 
     reset() {
         this._pos = 0;
         this._len = 0;
+        return this;
     }
 
     seal(position) {
@@ -137,10 +139,52 @@ class BufferPlus {
             throw new RangeError('Invalid position. position must be a valid integer between 0 to length - 1');
         }
         this._len = this._pos;
+        return this;
     }
 
     toBuffer() {
         return this._buf.slice(0, this._len);
+    }
+
+    toArrayBuffer() {
+        const b = this._buf.slice(0, this._len);
+        return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+    }
+
+    toDataView(byteOffset, byteLength) {
+        const b = this._buf.slice(0, this._len);
+        const arrayBuffer = b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+        return new DataView(arrayBuffer, byteOffset, byteLength);
+    }
+
+    toInt8Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Int8Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toUint8Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Uint8Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toInt16Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Int16Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toUint16Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Uint16Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toInt32Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Int32Array(b.buffer, b.byteOffset, b.length);
+    }
+
+    toUint32Array() {
+        const b = this._buf.slice(0, this._len);
+        return new Uint32Array(b.buffer, b.byteOffset, b.length);
     }
 
     toString(encoding) {
@@ -155,27 +199,39 @@ class BufferPlus {
         return this._buf.slice(this._pos, this._len);
     }
 
-    moveTo(position) {
+    moveTo(position, force) {
         if (!Number.isSafeInteger(position)) {
             throw new TypeError('position must be a valid integer number');
         }
+
+        if (force === true && position > 0) {
+            this._ensureWriteSize(position);
+        }
+
         if (position < 0 || (position > 0 && position > this._len)) {
             throw new RangeError(`position must be between 0 to length, position: ${position}, len: ${this._len}`);
         }
         this._pos = position;
+        return this;
     }
 
-    skip(offset) {
+    skip(offset, force) {
         if (!Number.isSafeInteger(offset)) {
             throw new TypeError('position must be a valid integer number');
         }
 
+        if (force === true) {
+            this._ensureWriteSize(offset);
+        }
+
         const position = this._pos + offset;
+
         if (position < 0 || position > this._len) {
             throw new RangeError('skip position must be between 0 to length');
         }
 
         this._pos = position;
+        return this;
     }
 
     rewind(offset) {
@@ -189,6 +245,7 @@ class BufferPlus {
         }
 
         this._pos = position;
+        return this;
     }
 
     readBuffer(length) {
@@ -691,6 +748,8 @@ class BufferPlus {
         if (offset <= this._pos) {
             this._pos += 8;
         }
+
+        return this;
     }
 }
 
