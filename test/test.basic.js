@@ -427,6 +427,13 @@ describe('Read/Write', () => {
             bp.readArray('UINT32BE').should.deep.equal(testIntItems);
             bp.readArray('String').should.deep.equal(testStringItems);
         });
+
+        it('empty', () => {
+            const bp = BufferPlus.allocUnsafe(32);
+            bp.writeArray([], 'string');
+            bp.moveTo(0);
+            bp.readArray('string').should.deep.equal([]);
+        });
     });
 
     describe('#Fixed Number', () => {

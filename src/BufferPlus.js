@@ -355,8 +355,8 @@ class BufferPlus {
         if (!Array.isArray(items)) {
             throw new TypeError('items must be a valid Array');
         }
-        if (items.length < 1) {
-            throw new RangeError('items length must be greater than zero');
+        if (items.length < 0) {
+            throw new RangeError('items length must be greater than or equal to zero');
         }
 
         const funcMap = _getTypeFuncMap(type);

@@ -249,6 +249,28 @@ describe('Custom. Schema', () => {
                 }
         );
 
+        BufferPlus.createSchema('ArrayTest', {
+            type: 'object',
+            properties: {
+                item1: {
+                    type: 'array',
+                    items: {
+                        type: 'boolean',
+                    },
+                },
+                item2: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            name: {type: 'string'},
+                        },
+                        order: ['name'],
+                    },
+                },
+            },
+            order: ['item1', 'item2'],
+        });
         BufferPlus.createSchema('ComplexObject', complextObjectSchema);
 
         const locationSchema = BufferPlus.createSchema('Location');
@@ -275,6 +297,23 @@ describe('Custom. Schema', () => {
 
     beforeEach(() => {
         bp.reset();
+    });
+
+    it('#Empty Array', () => {
+        const empty1 = {
+            item1: [],
+            item2: [],
+        };
+        const empty2 = {
+            item1: [],
+            item2: [{name: 'test'}],
+        };
+        bp.writeSchema('ArrayTest', empty1);
+        bp.writeSchema('ArrayTest', empty2);
+
+        const decodeBuf = BufferPlus.from(bp);
+        decodeBuf.readSchema('ArrayTest').should.deep.equal(empty1);
+        decodeBuf.readSchema('ArrayTest').should.deep.equal(empty2);
     });
 
     it('#Header(auto)', () => {
