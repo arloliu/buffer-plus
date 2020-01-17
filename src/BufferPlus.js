@@ -758,7 +758,8 @@ BufferPlus.hasSchema = function(name) {
 };
 
 BufferPlus.getSchema = function(name) {
-    return SCHEMA_OBJS[name];
+    const schema = SCHEMA_OBJS[name];
+    return schema;
 };
 
 BufferPlus.hasCustomType = function(type) {

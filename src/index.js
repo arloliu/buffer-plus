@@ -180,6 +180,9 @@ exports.addCustomType = function(name, readFunction, writeFunction, sizeFunction
 exports.createSchema = function(name, schema) {
     const schemaInstance = new BufferSchema(name, schema);
     BufferPlus._registerSchema(name, schemaInstance);
+    if (schema instanceof Object) {
+        schemaInstance.buildOnce();
+    }
     return schemaInstance;
 };
 

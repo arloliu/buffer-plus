@@ -360,8 +360,12 @@ class BufferSchema {
         const schemaInstance = this._getSchemaInstance(schemaName);
         const typeLowerCase = schema.type.toLowerCase();
 
+        debug(`_compileSchemaArray schemaName: ${schemaName}, schema.name: ${schema.name}, name: ${name} type: ${typeLowerCase}`);
         if (typeLowerCase === 'object') {
             this._compileSchemaObject(schemaName, schema);
+        } else if (typeLowerCase === 'schema') {
+            const nestSchema = BufferPlus.getSchema(schema.name);
+            this._compileSchemaObject(schemaName, nestSchema._schema);
         } else if (typeLowerCase === 'custom') {
             schemaInstance.addField(name, schema.name);
         } else if (typeLowerCase === 'array') {
@@ -384,9 +388,9 @@ class BufferSchema {
     }
 
     _compileSchemaObject(schemaName, schema) {
-        // debug(`== _compileSchemaObject: schemaName: ${schemaName}`);
+        debug(`== _compileSchemaObject: schemaName: ${schemaName}`);
         if (!(schema instanceof Object)) {
-            throw new TypeError('Invalid schema definition');
+            throw new TypeError('Invalid schema definition' + JSON.stringify(schema));
         }
         ObjectRequiredFields.forEach((field) => {
             if (!schema.hasOwnProperty(field)) {
@@ -422,13 +426,17 @@ class BufferSchema {
             }
 
             const typeLowerCase = prop.type.toLowerCase();
-
+            debug(`_compileSchemaObject schemaName: ${schemaName}, schema.name: ${schema.name}, name: ${name} type: ${typeLowerCase}`);
             if (typeLowerCase === 'object') {
                 const nestSchemaName = `${schemaName}_${name}_obj`;
                 this._compileSchemaObject(nestSchemaName, prop);
                 schemaInstance.addField(name, BufferPlus.getSchema(nestSchemaName));
             } else if (typeLowerCase === 'array') {
                 this._compileSchemaArray(schemaName, name, prop);
+            } else if (typeLowerCase === 'schema') {
+                const nestSchema = BufferPlus.getSchema(prop.name);
+                nestSchema.buildOnce();
+                schemaInstance.addField(name, nestSchema);
             } else if (typeLowerCase === 'custom') {
                 if (typeof prop.name !== 'string') {
                     throw new SyntaxError(`Custom type requires 'name' field.`);
@@ -444,6 +452,7 @@ class BufferSchema {
         const needBuildSchema = (this._schema && !this._buildSchema);
         if (!this._buildOnce || needBuildSchema) {
             if (needBuildSchema) {
+                debug('_schema:', this._schema);
                 this._compileSchemaObject(this.name, this._schema);
                 this._buildSchema = true;
             }
@@ -460,9 +469,25 @@ class BufferSchema {
         this._decodeFunc = new Function('rBuffer', 'helper', decodeFuncStr);
         this._encodeFunc = new Function('wBuffer', 'json', 'helper', encodeFuncStr);
         this._byteLengthFunc = new Function('json', 'helper', byteLengthFuncStr);
-        // debug('_decodeFunc:\n', this._decodeFunc.toString());
-        // debug('_encodeFunc:\n', this._encodeFunc.toString());
-        // debug('_byteLengthFunc:\n', this._byteLengthFunc.toString());
+        if (process.env.NODE_DEBUG === 'bp') {
+            const prettier = require('prettier-eslint');
+            const path = require('path');
+            const eslintrc = path.resolve(__dirname, '..', '.eslintrc.js');
+
+            const funcPrettier = (src) => {
+                return prettier({text: src, filePath: eslintrc});
+            };
+            const prettyDecodeFunc = funcPrettier(decodeFuncStr);
+            const prettyEncodeFunc = funcPrettier(encodeFuncStr);
+            const prettyByteLengthFunc = funcPrettier(byteLengthFuncStr);
+            this._decodeFunc = new Function('rBuffer', 'helper', prettyDecodeFunc);
+            this._encodeFunc = new Function('wBuffer', 'json', 'helper', prettyEncodeFunc);
+            this._byteLengthFunc = new Function('json', 'helper', prettyByteLengthFunc);
+
+            debug('_decodeFunc:\n', this._decodeFunc.toString());
+            debug('_encodeFunc:\n', this._encodeFunc.toString());
+            debug('_byteLengthFunc:\n', this._byteLengthFunc.toString());
+        }
     }
 
     getDecodeNameFuncStr(funcName) {
@@ -488,6 +513,7 @@ class BufferSchema {
     }
 
     _compactFuncStr(array) {
+        // debug('\n\n###############\n' + array.join('\n'));
         const trimArray = array.map((item) => {
             if (typeof item !== 'string') {
                 return '';

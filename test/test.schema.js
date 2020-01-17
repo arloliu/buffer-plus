@@ -41,6 +41,26 @@ const testHeader2 = {
     ],
 };
 
+const testNestSchema = {
+    user: {
+        name: 'test',
+        email: 'test@gmail.com',
+        currentStatus: {group: 'health', msg: 'ok'},
+    },
+    accounts: [
+        {
+            name: 'test1',
+            email: 'test1@gmail.com',
+            currentStatus: {group: 'health', msg: 'ok'},
+        },
+        {
+            name: 'test2',
+            email: 'test2@gmail.com',
+            currentStatus: {group: 'health', msg: 'ok'},
+        },
+    ],
+};
+
 const testComplexObject = {
     headerLen: 2000,
     name: 'test header',
@@ -78,6 +98,14 @@ const testComplexObject = {
             items: [0xfffffff1, 0xfffffff2, 0xfffffff3, 0xfffffff4],
         },
     },
+    account: {
+        name: 'test',
+        email: 'test@gmail.com',
+        currentStatus: {
+            group: 'test',
+            msg: 'test group',
+        },
+    },
     locations: ['tw', 'us', 'jp'],
     languages: [['aa', 'bb', 'cc'], ['dd', 'ee'], ['ff', 'gg']],
     labels: [
@@ -99,6 +127,45 @@ const testComplexObject = {
     },
 };
 
+BufferPlus.createSchema('status', {
+    type: 'object',
+    properties: {
+        group: {type: 'string'},
+        msg: {type: 'string'},
+    },
+    order: ['group', 'msg'],
+});
+
+BufferPlus.createSchema('account', {
+    type: 'object',
+    properties: {
+        name: {type: 'string'},
+        email: {type: 'string'},
+        currentStatus: {
+            type: 'schema',
+            name: 'status',
+        },
+    },
+    order: ['name', 'email', 'currentStatus'],
+});
+
+const nestSchemaObjetSchema = {
+    type: 'object',
+    properties: {
+        user: {
+            type: 'schema',
+            name: 'account',
+        },
+        accounts: {
+            type: 'array',
+            items: {
+                type: 'schema',
+                name: 'account',
+            },
+        },
+    },
+    order: ['user', 'accounts'],
+};
 
 const complextObjectSchema = {
     type: 'object',
@@ -138,6 +205,10 @@ const complextObjectSchema = {
                 nest2: {type: 'custom', name: 'CustomObject'},
             },
             order: ['nest1', 'nest2'],
+        },
+        account: {
+            type: 'schema',
+            name: 'account',
         },
         locations: {
             type: 'array',
@@ -202,6 +273,7 @@ const complextObjectSchema = {
         'customObject',
         'customArray',
         'customNestObject',
+        'account',
         'locations',
         'languages',
         'labels',
@@ -271,6 +343,8 @@ describe('Custom. Schema', () => {
             },
             order: ['item1', 'item2'],
         });
+        BufferPlus.createSchema('NestSchema', nestSchemaObjetSchema);
+
         BufferPlus.createSchema('ComplexObject', complextObjectSchema);
 
         const locationSchema = BufferPlus.createSchema('Location');
@@ -314,6 +388,16 @@ describe('Custom. Schema', () => {
         const decodeBuf = BufferPlus.from(bp);
         decodeBuf.readSchema('ArrayTest').should.deep.equal(empty1);
         decodeBuf.readSchema('ArrayTest').should.deep.equal(empty2);
+    });
+
+    it('#NestSchema', () => {
+        let offset = 0;
+        bp.writeSchema('NestSchema', testNestSchema);
+        offset += BufferPlus.byteLengthSchema('NestSchema', testNestSchema);
+        bp.length.should.equal(offset);
+
+        const decodeBuf = BufferPlus.from(bp);
+        decodeBuf.readSchema('NestSchema').should.deep.equal(testNestSchema);
     });
 
     it('#Header(auto)', () => {
