@@ -344,18 +344,6 @@ describe('Custom. Schema', () => {
             order: ['item1', 'item2'],
         });
 
-        BufferPlus.createSchema('ArrayObject', {
-            type: 'array',
-            items: {
-                type: 'object',
-                properties: {
-                    name: {type: 'string'},
-                    email: {type: 'string'},
-                },
-                order: ['name', 'email'],
-            },
-        });
-
         BufferPlus.createSchema('NestSchema', nestSchemaObjetSchema);
 
         BufferPlus.createSchema('ComplexObject', complextObjectSchema);
@@ -387,15 +375,35 @@ describe('Custom. Schema', () => {
     });
 
     it('#Array Object', () => {
+        BufferPlus.createSchema('ArrayObject', {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    num1: {type: 'int32le'},
+                    num2: {type: 'float64be'},
+                    obj: {
+                        type: 'object',
+                        properties: {
+                            name: {type: 'string'},
+                        },
+                        order: ['name'],
+                    },
+                },
+                order: ['num1', 'num2', 'obj'],
+            },
+        });
+
         const items = [
-            {name: 'test1', email: 'test1@example.com'},
-            {name: 'test2', email: 'test2@example.com'},
-            {name: 'test3', email: 'test3@example.com'},
+            {num1: 10001, num2: 1.56, obj: {name: 'test1'}},
+            {num1: 20001, num2: 2.56, obj: {name: 'test2'}},
+            {num1: 30001, num2: 3.56, obj: {name: 'test3'}},
         ];
         bp.writeSchema('ArrayObject', items);
 
         const decodeBuf = BufferPlus.from(bp);
-        decodeBuf.readSchema('ArrayObject').should.deep.equal(items);
+        const decodeData = decodeBuf.readSchema('ArrayObject');
+        decodeData.should.deep.equal(items);
     });
 
     it('#Empty Array', () => {

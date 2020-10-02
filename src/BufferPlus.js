@@ -831,6 +831,7 @@ const protos = BufferPlus.prototype;
 // set built-in type map here
 BUILTIN_TYPE_MAP = {
     // boolean
+    'bool': {size: 1, read: protos.readBoolean, write: protos.writeBoolean},
     'boolean': {size: 1, read: protos.readBoolean, write: protos.writeBoolean},
     // signed integers
     'int8': {size: 1, read: protos.readInt8, write: protos.writeInt8},
@@ -853,8 +854,12 @@ BUILTIN_TYPE_MAP = {
     // float & double
     'floatbe': {size: 4, read: protos.FloatBE, write: protos.writeFloatBE},
     'floatle': {size: 4, read: protos.FloatLE, write: protos.writeFloatLE},
+    'float32be': {size: 4, read: protos.FloatBE, write: protos.writeFloatBE},
+    'float32le': {size: 4, read: protos.FloatLE, write: protos.writeFloatLE},
     'doublebe': {size: 8, read: protos.DoubleBE, write: protos.writeDoubleBE},
     'doublele': {size: 8, read: protos.DoubleLE, write: protos.writeDoubleLE},
+    'float64be': {size: 8, read: protos.DoubleBE, write: protos.writeDoubleBE},
+    'float64le': {size: 8, read: protos.DoubleLE, write: protos.writeDoubleLE},
 
     // variable integers
     'varint': {

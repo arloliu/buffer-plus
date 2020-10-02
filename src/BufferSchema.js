@@ -21,6 +21,7 @@ const ObjectRequiredFields = ['type', 'properties', 'order'];
 const ArrayRequiredFields = ['type', 'items'];
 
 const READ_BUILTIN_TYPES = {
+    'bool': 'helper.readBoolean(buffer);',
     'boolean': 'helper.readBoolean(buffer);',
     'int8': 'buffer.readInt8(helper.offset); helper.offset += 1;',
     'int16be': 'buffer.readInt16BE(helper.offset); helper.offset += 2;',
@@ -40,9 +41,13 @@ const READ_BUILTIN_TYPES = {
 
     'floatbe': 'buffer.readFloatBE(helper.offset); helper.offset += 4;',
     'floatle': 'buffer.readFloatLE(helper.offset); helper.offset += 4;',
+    'float32be': 'buffer.readFloatBE(helper.offset); helper.offset += 4;',
+    'float32le': 'buffer.readFloatLE(helper.offset); helper.offset += 4;',
 
     'doublebe': 'buffer.readDoubleBE(helper.offset); helper.offset += 8;',
     'doublele': 'buffer.readDoubleLE(helper.offset); helper.offset += 8;',
+    'float64be': 'buffer.readDoubleBE(helper.offset); helper.offset += 8;',
+    'float64le': 'buffer.readDoubleLE(helper.offset); helper.offset += 8;',
 
     'varint': 'helper.readVarInt(buffer);',
     'varuint': 'helper.readVarUInt(buffer);',
@@ -77,7 +82,7 @@ function _genWriteStr(funcName, valueStr) {
 
 function getBuiltinWriteString(dataType, valueStr) {
     switch (dataType) {
-        // case 'boolean': return _genWriteStr('Boolean', valueStr + ' ? 1 : 0');
+        case 'bool': return `helper.writeBoolean(buffer, ${valueStr} ? 1 : 0);`;
         case 'boolean': return `helper.writeBoolean(buffer, ${valueStr} ? 1 : 0);`;
         case 'int8': return _genWriteStr('Int8', valueStr);
         case 'int16be': return _genWriteStr('Int16BE', valueStr);
@@ -97,9 +102,12 @@ function getBuiltinWriteString(dataType, valueStr) {
 
         case 'floatbe': return _genWriteStr('FloatBE', valueStr);
         case 'floatle': return _genWriteStr('FloatLE', valueStr);
+        case 'float32be': return _genWriteStr('FloatBE', valueStr);
+        case 'float32le': return _genWriteStr('FloatLE', valueStr);
         case 'doublebe': return _genWriteStr('DoubleBE', valueStr);
         case 'doublele': return _genWriteStr('DoubleLE', valueStr);
-
+        case 'float64be': return _genWriteStr('DoubleBE', valueStr);
+        case 'float64le': return _genWriteStr('DoubleLE', valueStr);
 
         case 'varuint': return `helper.writeVarUInt(buffer, ${valueStr});`;
         case 'varint': return `helper.writeVarInt(buffer, ${valueStr});`;
@@ -454,11 +462,12 @@ class BufferSchema {
             if (needBuildSchema) {
                 debug('_schema:', this._schema);
                 const schemaType = this._schema.type.toLowerCase();
-                if (schemaType == 'object') {
+                if (schemaType === 'object') {
                     this._compileSchemaObject(this.name, this._schema);
-                } else {
+                } else if (schemaType === 'array') {
                     this._compileSchemaArray(this.name, null, this._schema);
-
+                } else {
+                    throw new TypeError(`Invalid schema type property: ${schemaType}`);
                 }
                 this._buildSchema = true;
             }
