@@ -453,7 +453,13 @@ class BufferSchema {
         if (!this._buildOnce || needBuildSchema) {
             if (needBuildSchema) {
                 debug('_schema:', this._schema);
-                this._compileSchemaObject(this.name, this._schema);
+                const schemaType = this._schema.type.toLowerCase();
+                if (schemaType == 'object') {
+                    this._compileSchemaObject(this.name, this._schema);
+                } else {
+                    this._compileSchemaArray(this.name, null, this._schema);
+
+                }
                 this._buildSchema = true;
             }
             this.build();

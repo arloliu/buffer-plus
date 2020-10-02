@@ -343,6 +343,19 @@ describe('Custom. Schema', () => {
             },
             order: ['item1', 'item2'],
         });
+
+        BufferPlus.createSchema('ArrayObject', {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    name: {type: 'string'},
+                    email: {type: 'string'},
+                },
+                order: ['name', 'email'],
+            },
+        });
+
         BufferPlus.createSchema('NestSchema', nestSchemaObjetSchema);
 
         BufferPlus.createSchema('ComplexObject', complextObjectSchema);
@@ -371,6 +384,18 @@ describe('Custom. Schema', () => {
 
     beforeEach(() => {
         bp.reset();
+    });
+
+    it('#Array Object', () => {
+        const items = [
+            {name: 'test1', email: 'test1@example.com'},
+            {name: 'test2', email: 'test2@example.com'},
+            {name: 'test3', email: 'test3@example.com'},
+        ];
+        bp.writeSchema('ArrayObject', items);
+
+        const decodeBuf = BufferPlus.from(bp);
+        decodeBuf.readSchema('ArrayObject').should.deep.equal(items);
     });
 
     it('#Empty Array', () => {
