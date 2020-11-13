@@ -1,5 +1,5 @@
 const path = require('path');
-// const webpack = require('webpack');
+const webpack = require('webpack');
 
 module.exports = {
     target: 'web',
@@ -31,6 +31,7 @@ module.exports = {
             'buffer': require.resolve('buffer/'),
             'util': false,
             'path': false,
+            'prettier-eslint': false,
         },
     },
     node: {
@@ -38,4 +39,13 @@ module.exports = {
         __filename: false,
         __dirname: false,
     },
+    plugins: [
+        new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer'],
+        }),
+        new webpack.EnvironmentPlugin({
+            NODE_ENV: 'production', // use 'development' unless process.env.NODE_ENV is defined
+            NODE_DEBUG: false,
+        }),
+    ],
 };
