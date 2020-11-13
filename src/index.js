@@ -1,4 +1,11 @@
 'use strict';
+/*!
+ * Enhanced high performance Node.js style Buffer with auto re-allocation, custom. types and static schematic support.
+ *
+ * @author   Arlo <arlo.liu@gmail.com>
+ * @license  MIT
+ */
+
 const Buffer = require('buffer').Buffer;
 const BufferPlus = require('./BufferPlus.js');
 const BufferSchema = require('./BufferSchema.js');

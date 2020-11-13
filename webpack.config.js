@@ -19,7 +19,6 @@ module.exports = {
         rules: [
             {
                 test: /\.js$/i,
-                // exclude: /node_modules/,
                 use: {
                     loader: 'babel-loader',
                 },
@@ -27,10 +26,16 @@ module.exports = {
             },
         ],
     },
-    optimization: {
-
+    resolve: {
+        fallback: {
+            'buffer': require.resolve('buffer/'),
+            'util': false,
+            'path': false,
+        },
     },
     node: {
-        Buffer: true,
+        global: false,
+        __filename: false,
+        __dirname: false,
     },
 };
