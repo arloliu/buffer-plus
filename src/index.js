@@ -1,4 +1,5 @@
 'use strict';
+/* eslint-disable spaced-comment */
 /*!
  * Enhanced high performance Node.js style Buffer with auto re-allocation, custom. types and static schematic support.
  *
@@ -197,6 +198,7 @@ exports.hasSchema = BufferPlus.hasSchema;
 
 exports.getSchema = BufferPlus.getSchema;
 
+exports.getAllSchemas = BufferPlus.getAllSchemas;
 
 /** * byteLength methods ***/
 // Buffer.byteLength(string[, encoding])

@@ -762,6 +762,14 @@ BufferPlus.getSchema = function(name) {
     return schema;
 };
 
+BufferPlus.getAllSchemas = function() {
+    const cloned = {};
+    for (const key of Object.keys(SCHEMA_OBJS)) {
+        cloned[key] = SCHEMA_OBJS[key];
+    }
+    return cloned;
+};
+
 BufferPlus.hasCustomType = function(type) {
     return CUSTOM_TYPE_MAP.hasOwnProperty(type);
 };
