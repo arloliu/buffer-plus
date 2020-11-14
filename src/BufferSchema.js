@@ -17,7 +17,7 @@ const debug = (nodeUtil && nodeUtil.debuglog) ? nodeUtil.debuglog('bp') : functi
 // Declare helper first
 let helper = {};
 
-const ObjectRequiredFields = ['type', 'properties', 'order'];
+const ObjectRequiredFields = ['type', 'properties'];
 const ArrayRequiredFields = ['type', 'items'];
 
 const READ_BUILTIN_TYPES = {
@@ -79,6 +79,11 @@ function getArrayValStr() {
 function _genWriteStr(funcName, valueStr) {
     return `helper.offset = buffer.write${funcName}(${valueStr}, helper.offset);`;
 }
+
+function isObject(obj) {
+    const type = typeof obj;
+    return type === 'function' || (type === 'object' && !!obj);
+};
 
 function getBuiltinWriteString(dataType, valueStr) {
     switch (dataType) {
@@ -171,7 +176,7 @@ function getDataTypeFunctionString(type, readObjStrArg, writeObjStrArg) {
 }
 
 class BufferSchema {
-    constructor(name, schema) {
+    constructor(name, schemaDef) {
         this.name = name;
         this._encoding = 'utf8';
 
@@ -188,7 +193,7 @@ class BufferSchema {
 
         this._refIndex = 1;
 
-        this._schema = undefined;
+        this._schemaDef = undefined;
 
         this._buildOnce = false;
         this._buildSchema = false;
@@ -205,9 +210,13 @@ class BufferSchema {
             throw new Error('Not implemented.');
         };
 
-        if (schema instanceof Object) {
-            this._schema = schema;
+        if (isObject(schemaDef)) {
+            this._schemaDef = schemaDef;
         }
+    }
+
+    getSchemaDef() {
+        return this._schemaDef;
     }
 
     encode(buffer, data) {
@@ -356,75 +365,95 @@ class BufferSchema {
         }
     }
 
-    _compileSchemaArray(schemaName, name, schema) {
-        if (!(schema instanceof Object)) {
+    _compileSchemaArray(schemaName, name, schDef) {
+        if (!isObject(schDef)) {
             throw new TypeError('Invalid schema definition');
         }
 
-        if (typeof schema.type !== 'string') {
+        if (typeof schDef.type !== 'string') {
             throw new SyntaxError(`Schema definition requires valid 'type' field.`);
         }
 
         const schemaInstance = this._getSchemaInstance(schemaName);
-        const typeLowerCase = schema.type.toLowerCase();
+        const typeLowerCase = schDef.type.toLowerCase();
 
-        debug(`_compileSchemaArray schemaName: ${schemaName}, schema.name: ${schema.name}, name: ${name} type: ${typeLowerCase}`);
+        debug(`_compileSchemaArray schemaName: ${schemaName}, schDef.name: ${schDef.name}, name: ${name} type: ${typeLowerCase}`);
         if (typeLowerCase === 'object') {
-            this._compileSchemaObject(schemaName, schema);
+            this._compileSchemaObject(schemaName, schDef);
         } else if (typeLowerCase === 'schema') {
-            const nestSchema = BufferPlus.getSchema(schema.name);
-            this._compileSchemaObject(schemaName, nestSchema._schema);
+            const nestSchema = BufferPlus.getSchema(schDef.name);
+            this._compileSchemaObject(schemaName, nestSchema._schemaDef);
         } else if (typeLowerCase === 'custom') {
-            schemaInstance.addField(name, schema.name);
+            schemaInstance.addField(name, schDef.name);
         } else if (typeLowerCase === 'array') {
             ArrayRequiredFields.forEach((field) => {
-                if (!schema.hasOwnProperty(field)) {
+                if (!schDef.hasOwnProperty(field)) {
                     throw new SyntaxError(`Schema definition requires '${field}' field. definition: \n${JSON.stringify(schema, null, 4)}`);
                 }
             });
 
             const nestSchemaName = name ? `${schemaName}_${name}` : `${schemaName}_nested`;
-            if (isReadBuiltinTypes(schema.items.type)) {
-                schemaInstance.addArrayField(name, schema.items.type);
+            if (isReadBuiltinTypes(schDef.items.type)) {
+                schemaInstance.addArrayField(name, schDef.items.type);
             } else {
-                this._compileSchemaArray(nestSchemaName, null, schema.items);
+                this._compileSchemaArray(nestSchemaName, null, schDef.items);
                 schemaInstance.addArrayField(name, BufferPlus.getSchema(nestSchemaName));
             }
-        } else if (isReadBuiltinTypes(schema.type)) {
-            schemaInstance.addArrayField(name, schema.type);
+        } else if (isReadBuiltinTypes(schDef.type)) {
+            schemaInstance.addArrayField(name, schDef.type);
         }
     }
 
-    _compileSchemaObject(schemaName, schema) {
+    _compileSchemaObject(schemaName, schDef) {
         debug(`== _compileSchemaObject: schemaName: ${schemaName}`);
-        if (!(schema instanceof Object)) {
+        if (!isObject(schDef)) {
             throw new TypeError('Invalid schema definition' + JSON.stringify(schema));
         }
+
+        if (schDef.type !== 'object') {
+            throw new TypeError('Type of schema definition should be object');
+        }
+
         ObjectRequiredFields.forEach((field) => {
-            if (!schema.hasOwnProperty(field)) {
+            if (!schDef.hasOwnProperty(field)) {
                 throw new SyntaxError(`Schema definition requires '${field}' field.`);
             }
         });
 
-        if (schema.type !== 'object') {
-            throw new TypeError('Type of schema definition should be object');
+        if (!isObject(schDef.properties)) {
+            throw new TypeError('type of "properties" property within schema definition must be object.');
+        }
+
+        // build order property if not defined
+        if (schDef.order === undefined) {
+            schDef.order = [];
+            const names = Object.getOwnPropertyNames(schDef.properties);
+            for (const name of names) {
+                if (schDef.properties.hasOwnProperty(name)) {
+                    schDef.order.push(name);
+                }
+            }
+        }
+
+        if (!Array.isArray(schDef.order)) {
+            throw new TypeError('type of order property within schema definition must be array.');
         }
 
         const schemaInstance = this._getSchemaInstance(schemaName);
-        const properties = Object.getOwnPropertyNames(schema.properties);
+        const properties = Object.getOwnPropertyNames(schDef.properties);
 
-        if (schema.order.length !== properties.length) {
+        if (schDef.order.length !== properties.length) {
             throw new SyntaxError(`The length of order should be equal to properties. Definition: ${JSON.stringify(schema, null, 4)}`);
         }
 
-        schema.order.forEach((field) => {
+        schDef.order.forEach((field) => {
             if (properties.indexOf(field) === -1) {
                 throw new SyntaxError(`The properties doesn't contains '${field}' field in order. Definition: ${JSON.stringify(schema, null, 4)}`);
             }
         });
 
-        schema.order.forEach((name) => {
-            const prop = schema.properties[name];
+        schDef.order.forEach((name) => {
+            const prop = schDef.properties[name];
 
             if (!(prop instanceof Object)) {
                 throw new TypeError('Invalid schema definition');
@@ -434,7 +463,7 @@ class BufferSchema {
             }
 
             const typeLowerCase = prop.type.toLowerCase();
-            debug(`_compileSchemaObject schemaName: ${schemaName}, schema.name: ${schema.name}, name: ${name} type: ${typeLowerCase}`);
+            debug(`_compileSchemaObject schemaName: ${schemaName}, schDef.name: ${schDef.name}, name: ${name} type: ${typeLowerCase}`);
             if (typeLowerCase === 'object') {
                 const nestSchemaName = `${schemaName}_${name}_obj`;
                 this._compileSchemaObject(nestSchemaName, prop);
@@ -457,15 +486,15 @@ class BufferSchema {
     }
 
     buildOnce() {
-        const needBuildSchema = (this._schema && !this._buildSchema);
+        const needBuildSchema = (this._schemaDef && !this._buildSchema);
         if (!this._buildOnce || needBuildSchema) {
             if (needBuildSchema) {
-                debug('_schema:', this._schema);
-                const schemaType = this._schema.type.toLowerCase();
+                debug('_schemaDef:', this._schemaDef);
+                const schemaType = this._schemaDef.type.toLowerCase();
                 if (schemaType === 'object') {
-                    this._compileSchemaObject(this.name, this._schema);
+                    this._compileSchemaObject(this.name, this._schemaDef);
                 } else if (schemaType === 'array') {
-                    this._compileSchemaArray(this.name, null, this._schema);
+                    this._compileSchemaArray(this.name, null, this._schemaDef);
                 } else {
                     throw new TypeError(`Invalid schema type property: ${schemaType}`);
                 }
