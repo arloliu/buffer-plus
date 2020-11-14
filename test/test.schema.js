@@ -374,6 +374,36 @@ describe('Custom. Schema', () => {
         bp.reset();
     });
 
+    it('#getAllSchemas', () => {
+        const schemas = BufferPlus.getAllSchemas();
+        schemas.should.have.any.keys('ArrayTest', 'Location', 'Item', 'Header', 'NestSchema', 'ComplexObject');
+    });
+
+    it('#Schema auto. build order property', () => {
+        let sch;
+        (() => {
+            sch = BufferPlus.createSchema('TestSchema', {
+                type: 'object',
+                properties: {
+                    c: {type: 'string'},
+                    b: {type: 'string'},
+                    a: {type: 'string'},
+                    nest: {
+                        type: 'object',
+                        properties: {
+                            c: {type: 'string'},
+                            b: {type: 'string'},
+                            a: {type: 'string'},
+                        },
+                    },
+                },
+            });
+        }).should.not.throw(Error);
+        const schDef = sch.getSchemaDef();
+        schDef.order.should.deep.equal(['c', 'b', 'a', 'nest']);
+        schDef.properties.nest.order.should.deep.equal(['c', 'b', 'a']);
+    });
+
     it('#Array Object', () => {
         BufferPlus.createSchema('ArrayObject', {
             type: 'array',
