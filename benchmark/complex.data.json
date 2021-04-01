@@ -1,0 +1,31 @@
+{
+	"category": 1,
+	"ips": ["192.168.1.1", "192.168.1.2"],
+	"positions": [100, 101, 200, 201],
+    "user": {
+        "name": "test",
+        "email": "test@gmail.com",
+        "currentStatus": {
+            "group": "health",
+            "msg": "ok"
+        }
+    },
+    "accounts": [
+        {
+            "name": "test1",
+            "email": "test1@gmail.com",
+            "currentStatus": {
+                "group": "health",
+                "msg": "ok"
+            }
+        },
+        {
+            "name": "test2",
+            "email": "test2@gmail.com",
+            "currentStatus": {
+                "group": "health",
+                "msg": "ok"
+            }
+        }
+    ]
+}

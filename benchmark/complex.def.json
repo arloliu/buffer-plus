@@ -1,0 +1,92 @@
+{
+    "type": "object",
+    "properties": {
+        "category": {
+            "type": "uint32le"
+        },
+        "ips": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "positions": {
+            "type": "array",
+            "items": {
+                "type": "uint8"
+            }
+        },
+        "user": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "currentStatus": {
+                    "type": "object",
+                    "properties": {
+                        "group": {
+                            "type": "string"
+                        },
+                        "msg": {
+                            "type": "string"
+                        }
+                    },
+                    "order": [
+                        "group",
+                        "msg"
+                    ]
+                }
+            },
+            "order": [
+                "name",
+                "email",
+                "currentStatus"
+            ]
+        },
+        "accounts": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "currentStatus": {
+                        "type": "object",
+                        "properties": {
+                            "group": {
+                                "type": "string"
+                            },
+                            "msg": {
+                                "type": "string"
+                            }
+                        },
+                        "order": [
+                            "group",
+                            "msg"
+                        ]
+                    }
+                },
+                "order": [
+                    "name",
+                    "email",
+                    "currentStatus"
+                ]
+            }
+        }
+    },
+    "order": [
+        "category",
+        "ips",
+        "positions",
+        "user",
+        "accounts"
+    ]
+}
